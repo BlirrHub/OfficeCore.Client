@@ -1,0 +1,65 @@
+@page "/admin/employees"
+@inject NavigationManager Nav
+@inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+
+<h1 class="text-2xl font-bold">Employees</h1>
+
+@if (AuthState.UserType != "Admin")
+{
+    <p class="mt-2 text-red-600">Not authorized.</p>
+}
+else
+{
+    <div class="mt-6 max-w-xl bg-white border rounded-xl p-4">
+        <h2 class="font-semibold">Create Employee</h2>
+
+        <div class="mt-4 grid grid-cols-1 gap-3">
+            <input class="border rounded-lg px-3 py-2" placeholder="Username" @bind="Req.Username" />
+            <input class="border rounded-lg px-3 py-2" placeholder="Temp Password" @bind="Req.tempPassword" />
+
+            <div class="grid grid-cols-2 gap-3">
+                <input class="border rounded-lg px-3 py-2" placeholder="First name" @bind="Req.FirstName" />
+                <input class="border rounded-lg px-3 py-2" placeholder="Last name" @bind="Req.LastName" />
+            </div>
+
+            <input class="border rounded-lg px-3 py-2" placeholder="Department" @bind="Req.Department" />
+            <input class="border rounded-lg px-3 py-2" placeholder="Position" @bind="Req.Position" />
+
+            <input class="border rounded-lg px-3 py-2"
+                   placeholder="Roles (comma separated: HR,Payroll)"
+                   @bind="RolesInput" />
+
+            @if (!string.IsNullOrWhiteSpace(Message))
+            {
+                <div class="text-sm @(IsError ? "text-red-600" : "text-green-700")">@Message</div>
+            }
+
+            <button class="bg-black text-white rounded-lg py-2"
+                    @onclick="CreateEmployee">
+                Create
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    private OfficeCore.Client.Models.Dtos.CreateEmployeeRequest Req = new();
+    private string RolesInput = "";
+    private string? Message;
+    private bool IsError;
+
+    private async Task CreateEmployee()
+    {
+        Message = null;
+
+        Req.Roles = RolesInput
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        var ok = await AdminApi.CreateEmployeeAsync(Req);
+
+        IsError = !ok;
+        Message = ok ? "Employee created." : "Failed to create employee (check token/roles/server).";
+    }
+}
