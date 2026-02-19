@@ -79,6 +79,9 @@ public class AdminApi
             employee.BiometricId,
             employee.DailyRate,
             employee.StdHoursPerDay,
+            employee.SchedTimeIn,
+            employee.SchedTimeOut,
+            employee.IsOTEnabled,
             employee.IsActive
         };
 
@@ -155,5 +158,17 @@ public class AdminApi
         }
 
         return await response.Content.ReadFromJsonAsync<ImportAttendanceResponse>();
+    }
+
+    public async Task<bool> UpdateAttendanceAsync(UpdateAttendanceRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return false;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.PutAsJsonAsync("api/admin/attendance/update", request);
+        return response.IsSuccessStatusCode;
     }
 }

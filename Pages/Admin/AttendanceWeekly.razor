@@ -1,5 +1,6 @@
 @page "/admin/attendance-weekly"
 @using OfficeCore.Client.Models.Dtos
+@using Microsoft.AspNetCore.Components.Forms
 
 @inject OfficeCore.Client.Services.State.AuthState AuthState
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
@@ -18,6 +19,9 @@ else
             </div>
 
             <div class="flex items-end gap-2">
+                <button class="bg-blue-600 text-white rounded-lg py-2 px-4 hover:bg-blue-700" @onclick="OpenImportModal">
+                    Import Attendance
+                </button>
                 <div>
                     <label class="block text-xs text-gray-500 mb-1">Week start</label>
                     <input class="border rounded-lg px-3 py-2" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
@@ -54,11 +58,12 @@ else
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dept</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
                             @foreach (var day in response.Employees[0].Days)
                             {
                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    @day.Date.ToString("MM/dd")
+                                    @day.Date.ToString("MM/dd")<br />
+                                    <span class="text-xs font-normal">@day.Date.ToString("ddd")</span>
                                 </th>
                             }
                         </tr>
@@ -74,11 +79,59 @@ else
                                         <span class="text-xs text-gray-400">(#@emp.BiometricId)</span>
                                     }
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">@(emp.Department ?? "-")</td>
+                                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-600">
+                                    @if (emp.SchedTimeIn.HasValue && emp.SchedTimeOut.HasValue)
+                                    {
+                                        <div>@emp.SchedTimeIn.Value.ToString("HH:mm") - @emp.SchedTimeOut.Value.ToString("HH:mm")</div>
+                                        @if (emp.IsOTEnabled)
+                                        {
+                                            <div class="text-green-600">OT Enabled</div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-400">No schedule</span>
+                                    }
+                                </td>
                                 @foreach (var d in emp.Days)
                                 {
-                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                        @FormatDay(d)
+                                    <td class="px-2 py-2 text-xs">
+                                        @if (editingCell == $"{emp.UserId}_{d.Date}")
+                                        {
+                                            <div class="space-y-1">
+                                                <input type="time" class="border rounded px-1 py-0.5 text-xs w-full" @bind="editTimeIn" />
+                                                <input type="time" class="border rounded px-1 py-0.5 text-xs w-full" @bind="editTimeOut" />
+                                                <div class="flex gap-1">
+                                                    <button class="bg-green-600 text-white rounded px-2 py-0.5 text-xs" @onclick="() => SaveEdit(emp.UserId, d.Date)">Save</button>
+                                                    <button class="bg-gray-400 text-white rounded px-2 py-0.5 text-xs" @onclick="CancelEdit">Cancel</button>
+                                                </div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div @onclick="() => StartEdit(emp.UserId, d)" class="cursor-pointer hover:bg-blue-50 p-1 rounded">
+                                                @if (d.TimeIn.HasValue || d.TimeOut.HasValue)
+                                                {
+                                                    <div class="font-medium">
+                                                        @FormatTime(d.TimeIn) - @FormatTime(d.TimeOut)
+                                                    </div>
+                                                    @if (d.CalculatedTimeIn.HasValue || d.CalculatedTimeOut.HasValue)
+                                                    {
+                                                        <div class="text-blue-600">
+                                                            → @FormatTime(d.CalculatedTimeIn) - @FormatTime(d.CalculatedTimeOut)
+                                                        </div>
+                                                    }
+                                                    @if (d.IsIncomplete)
+                                                    {
+                                                        <div class="text-orange-500">Incomplete</div>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-gray-400">-</span>
+                                                }
+                                            </div>
+                                        }
                                     </td>
                                 }
                             </tr>
@@ -88,6 +141,131 @@ else
             </div>
         }
     </div>
+
+    @* Import Modal *@
+    @if (showImportModal)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="CloseImportModal">
+            <div class="bg-white rounded-xl p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto" @onclick:stopPropagation="true">
+                <div class="flex justify-between items-start mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold">Import Attendance</h2>
+                        <p class="text-sm text-gray-500 mt-1">
+                            Upload the Excel file (.xls or .xlsx) exported from the biometric machine.
+                        </p>
+                    </div>
+                    <button class="text-gray-400 hover:text-gray-600" @onclick="CloseImportModal">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(importMessage))
+                {
+                    <div class="p-4 mb-4 rounded-lg @(importIsError ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800")">
+                        @importMessage
+                    </div>
+                }
+
+                @if (importResult is not null)
+                {
+                    <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                        <h3 class="font-semibold text-blue-900 mb-3">Import Summary</h3>
+                        <div class="grid grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <span class="text-blue-700">Week:</span>
+                                <span class="ml-2 font-medium">@importResult.WeekStart.ToString("MM/dd") - @importResult.WeekEnd.ToString("MM/dd")</span>
+                            </div>
+                            <div>
+                                <span class="text-green-700">✓ Inserted:</span>
+                                <span class="ml-2 font-semibold">@importResult.InsertedCount</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-600">○ Skipped:</span>
+                                <span class="ml-2">@importResult.SkippedDuplicateCount</span>
+                            </div>
+                            <div>
+                                <span class="text-orange-600">⚠ Unmatched:</span>
+                                <span class="ml-2">@importResult.UnmatchedEmployeeCount</span>
+                            </div>
+                        </div>
+
+                        @if (importResult.SampleErrors.Count > 0)
+                        {
+                            <div class="mt-4 pt-4 border-t border-blue-200">
+                                <h4 class="font-medium text-blue-900 mb-2">Sample Errors</h4>
+                                <div class="space-y-2 max-h-40 overflow-y-auto">
+                                    @foreach (var error in importResult.SampleErrors)
+                                    {
+                                        <div class="text-xs bg-white rounded p-2 border border-red-200">
+                                            <span class="font-semibold text-red-700">@error.Message</span>
+                                            @if (error.BiometricId is not null)
+                                            {
+                                                <span class="text-gray-600"> - Bio ID: @error.BiometricId</span>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+
+                        <button class="mt-4 bg-green-600 text-white rounded-lg py-2 px-4 w-full hover:bg-green-700" @onclick="CloseImportModalAndRefresh">
+                            Close & Refresh Data
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                        <InputFile OnChange="HandleImportFileSelected" accept=".xls,.xlsx" class="hidden" id="importFileInput" />
+                        <label for="importFileInput" class="cursor-pointer flex flex-col items-center">
+                            @if (importSelectedFile is null)
+                            {
+                                <svg class="w-14 h-14 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <span class="text-sm text-gray-600">Click to select Excel file (.xls or .xlsx)</span>
+                            }
+                            else
+                            {
+                                <svg class="w-6 h-6 text-green-500 mb-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-700">@importSelectedFile.Name</span>
+                                <span class="text-xs text-gray-500">@FormatFileSize(importSelectedFile.Size)</span>
+                            }
+                        </label>
+                    </div>
+
+                    @if (importSelectedFile is not null)
+                    {
+                        <div class="mt-4 flex gap-3">
+                            <button 
+                                class="bg-black text-white rounded-lg py-2 px-6 flex-1 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-800"
+                                @onclick="UploadImportFile"
+                                disabled="@isImporting">
+                                @if (isImporting)
+                                {
+                                    <span>Importing...</span>
+                                }
+                                else
+                                {
+                                    <span>Import Attendance</span>
+                                }
+                            </button>
+                            <button 
+                                class="border border-gray-300 rounded-lg py-2 px-4 hover:bg-gray-50"
+                                @onclick="ClearImportFile"
+                                disabled="@isImporting">
+                                Clear
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -98,6 +276,19 @@ else
     private bool IsError;
 
     private DateTime WeekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+
+    // Editing state
+    private string? editingCell;
+    private TimeOnly? editTimeIn;
+    private TimeOnly? editTimeOut;
+
+    // Import modal state
+    private bool showImportModal;
+    private IBrowserFile? importSelectedFile;
+    private ImportAttendanceResponse? importResult;
+    private bool isImporting;
+    private string? importMessage;
+    private bool importIsError;
 
     private async Task Load()
     {
@@ -115,6 +306,151 @@ else
             IsError = true;
             Message = "Failed to load weekly attendance.";
         }
+    }
+
+    private void StartEdit(Guid userId, WeeklyAttendanceDayDto day)
+    {
+        editingCell = $"{userId}_{day.Date}";
+        editTimeIn = day.TimeIn;
+        editTimeOut = day.TimeOut;
+    }
+
+    private void CancelEdit()
+    {
+        editingCell = null;
+        editTimeIn = null;
+        editTimeOut = null;
+    }
+
+    private async Task SaveEdit(Guid userId, DateOnly workDate)
+    {
+        if (editingCell is null)
+            return;
+
+        var request = new UpdateAttendanceRequest
+        {
+            UserId = userId,
+            WorkDate = workDate,
+            TimeIn = editTimeIn,
+            TimeOut = editTimeOut
+        };
+
+        var success = await AdminApi.UpdateAttendanceAsync(request);
+        
+        if (success)
+        {
+            Message = "Attendance updated successfully.";
+            IsError = false;
+            editingCell = null;
+            
+            // Reload data to get updated calculated times
+            await Load();
+        }
+        else
+        {
+            Message = "Failed to update attendance.";
+            IsError = true;
+        }
+    }
+
+    private void OpenImportModal()
+    {
+        showImportModal = true;
+        importSelectedFile = null;
+        importResult = null;
+        importMessage = null;
+        importIsError = false;
+    }
+
+    private void CloseImportModal()
+    {
+        showImportModal = false;
+        importSelectedFile = null;
+        importResult = null;
+        importMessage = null;
+        importIsError = false;
+    }
+
+    private async Task CloseImportModalAndRefresh()
+    {
+        CloseImportModal();
+        await Load();
+    }
+
+    private void HandleImportFileSelected(InputFileChangeEventArgs e)
+    {
+        importSelectedFile = e.File;
+        importResult = null;
+        importMessage = null;
+        importIsError = false;
+    }
+
+    private void ClearImportFile()
+    {
+        importSelectedFile = null;
+        importResult = null;
+        importMessage = null;
+        importIsError = false;
+    }
+
+    private async Task UploadImportFile()
+    {
+        if (importSelectedFile is null)
+            return;
+
+        importMessage = null;
+        importIsError = false;
+        isImporting = true;
+
+        try
+        {
+            const long maxFileSize = 10 * 1024 * 1024;
+            
+            if (importSelectedFile.Size > maxFileSize)
+            {
+                importIsError = true;
+                importMessage = "File size exceeds 10 MB limit.";
+                isImporting = false;
+                return;
+            }
+
+            using var stream = importSelectedFile.OpenReadStream(maxFileSize);
+            importResult = await AdminApi.ImportAttendanceAsync(stream, importSelectedFile.Name);
+
+            if (importResult is null)
+            {
+                importIsError = true;
+                importMessage = "Import failed. Please check the file format and try again.";
+            }
+            else
+            {
+                importMessage = $"Import completed: {importResult.InsertedCount} records inserted.";
+                importIsError = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            importIsError = true;
+            importMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isImporting = false;
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+            return $"{bytes} B";
+        if (bytes < 1024 * 1024)
+            return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+
+    private static string FormatTime(TimeOnly? time)
+    {
+        return time.HasValue ? time.Value.ToString("HH:mm") : "-";
     }
 
     private static string FormatDay(WeeklyAttendanceDayDto d)
