@@ -19,5 +19,10 @@ public class CreateEmployeeRequest
     public TimeOnly? SchedTimeOut { get; set; }
     public bool IsOTEnabled { get; set; } = false;
 
+    // Government deduction settings (default all enabled)
+    public bool HasSSSDeduction { get; set; } = true;
+    public bool HasPhilHealthDeduction { get; set; } = true;
+    public bool HasPagIBIGDeduction { get; set; } = true;
+
     public List<string> Roles { get; set; } = new();
 }

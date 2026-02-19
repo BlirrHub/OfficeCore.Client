@@ -50,6 +50,24 @@ else
                 OT Enabled
             </label>
 
+            <div class="border rounded-lg p-3 bg-gray-50">
+                <p class="text-sm font-semibold mb-2 text-gray-700">Government Deductions</p>
+                <div class="grid grid-cols-3 gap-2">
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" @bind="Req.HasSSSDeduction" />
+                        SSS
+                    </label>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" @bind="Req.HasPhilHealthDeduction" />
+                        PhilHealth
+                    </label>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input type="checkbox" @bind="Req.HasPagIBIGDeduction" />
+                        Pag-IBIG
+                    </label>
+                </div>
+            </div>
+
             <input class="border rounded-lg px-3 py-2"
                    placeholder="Roles (comma separated: HR,Payroll)"
                    @bind="RolesInput" />
