@@ -1,4 +1,4 @@
-namespace OfficeCore.Server.Application.Dtos;
+namespace OfficeCore.Client.Models.Dtos;
 
 public class ChangePasswordRequest
 {

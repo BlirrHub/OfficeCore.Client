@@ -2,7 +2,6 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using OfficeCore.Client.Models.Dtos;
 using OfficeCore.Client.Services.State;
-using OfficeCore.Server.Application.Dtos;
 
 namespace OfficeCore.Client.Services.Api;
 

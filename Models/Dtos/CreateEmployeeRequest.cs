@@ -3,7 +3,7 @@ namespace OfficeCore.Client.Models.Dtos;
 public class CreateEmployeeRequest
 {
     public string Username { get; set; } = "";
-    public string tempPassword { get; set; } = "";
+    public string TempPassword { get; set; } = "";
 
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
