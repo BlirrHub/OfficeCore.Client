@@ -1,0 +1,440 @@
+@page "/admin/payroll-weekly"
+@inject NavigationManager Nav
+@inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject OfficeCore.Client.Services.Api.PayrollApi PayrollApi
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Models.Enums
+
+@if (AuthState.UserType != "Admin")
+{
+    <p class="mt-2 text-red-600">Not authorized.</p>
+}
+else
+{
+    <div class="mt-6 max-w-[95%] mx-auto bg-neutral-900 border rounded-xl p-4">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+                <h1 class="text-2xl text-white font-bold">Weekly Payroll</h1>
+                <p class="text-sm text-gray-200">Generate and manage weekly income reports.</p>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <button class="bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="GeneratePayroll">
+                    Generate Payroll
+                </button>
+                <div>
+                    <label class="block text-xs text-gray-200 mb-1">Week start</label>
+                    <input class="border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
+                </div>
+                <button class="bg-black text-white border rounded-2xl p-2 px-6 py-2 hover:bg-gray-800" @onclick="Load">Load</button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="text-sm @(IsError ? "text-red-600" : "text-green-600") mb-3">@Message</div>
+        }
+
+        @if (isLoading)
+        {
+            <p class="text-gray-200">Loading...</p>
+        }
+        else if (response is null)
+        {
+            <p class="text-gray-200">No payroll data loaded. Select a week and click Generate or Load.</p>
+        }
+        else if (response.Employees is null || response.Employees.Count == 0)
+        {
+            <p class="text-gray-500">No payroll records found for this week.</p>
+        }
+        else
+        {
+            <div class="text-sm text-gray-200 mb-2">
+                Week: @response.WeekStart.ToString("yyyy-MM-dd") - @response.WeekEnd.ToString("yyyy-MM-dd") | 
+                Draft: @response.DraftCount | Approved: @response.ApprovedCount | Paid: @response.PaidCount
+            </div>
+
+            <div class="overflow-x-auto max-h-[600px] overflow-y-auto border border-neutral-700 rounded-lg">
+                <table class="min-w-full divide-y divide-neutral-500 text-xs">
+                    <thead class="bg-neutral-950 sticky top-0 z-10">
+                        <tr>
+                            <th rowspan="2" class="px-2 py-2 text-left text-xs font-bold text-gray-50 uppercase tracking-wider sticky left-0 bg-neutral-950 border-r border-neutral-700">Employee</th>
+                            <th rowspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Status</th>
+                            <th colspan="4" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Work Hours</th>
+                            <th colspan="4" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Pay</th>
+                            <th colspan="6" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Adjustments (Editable)</th>
+                            <th colspan="3" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Gov't Deductions</th>
+                            <th colspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider">Totals</th>
+                            <th rowspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider">Action</th>
+                        </tr>
+                        <tr>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Total</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Regular</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">OT</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50 border-r border-neutral-700">Rate/Hr</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Basic</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">OT Pay</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Gross</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50 border-r border-neutral-700">Daily Rate</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Reimburse</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Holiday</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">SL Pay</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">VL Pay</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Cash Adv</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50 border-r border-neutral-700">E-Loan</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">SSS</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">PhilHealth</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50 border-r border-neutral-700">Pag-IBIG</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Deductions</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Net Pay</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-neutral-800 divide-y divide-neutral-700">
+                        @foreach (var emp in response.Employees)
+                        {
+                            <tr class="hover:bg-neutral-700">
+                                <td class="px-2 py-2 whitespace-nowrap text-sm text-gray-50 sticky left-0 bg-neutral-800 border-r border-neutral-700">
+                                    <div class="font-medium">@emp.FirstName @emp.LastName</div>
+                                    @if (emp.BiometricId is not null)
+                                    {
+                                        <div class="text-xs text-gray-400">#@emp.BiometricId</div>
+                                    }
+                                </td>
+                                <td class="px-2 py-2 text-center border-r border-neutral-700">
+                                    @if (emp.Status == PayrollStatus.Draft)
+                                    {
+                                        <span class="px-2 py-1 bg-yellow-600 text-white rounded text-xs">Draft</span>
+                                    }
+                                    else if (emp.Status == PayrollStatus.Approved)
+                                    {
+                                        <span class="px-2 py-1 bg-green-600 text-white rounded text-xs">Approved</span>
+                                    }
+                                    else if (emp.Status == PayrollStatus.Paid)
+                                    {
+                                        <span class="px-2 py-1 bg-blue-600 text-white rounded text-xs">Paid</span>
+                                    }
+                                </td>
+                                <td class="px-2 py-2 text-center text-gray-200">@emp.TotalHours.ToString("F2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200">@emp.RegularHours.ToString("F2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200">@emp.OvertimeHours.ToString("F2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200 border-r border-neutral-700">₱@emp.HourlyRate.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200">₱@emp.BasicPay.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200">₱@emp.OvertimePay.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200 font-semibold">₱@emp.GrossPay.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-gray-400 text-xs border-r border-neutral-700">₱@emp.DailyRate.ToString("N2")</td>
+                                
+                                @* Editable Adjustments *@
+                                @if (editingEmployee == emp.UserId)
+                                {
+                                    <td class="px-1 py-2 text-center">
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.Reimbursement" />
+                                    </td>
+                                    <td class="px-1 py-2 text-center">
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.HolidayPay" />
+                                    </td>
+                                    <td class="px-1 py-2 text-center">
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.SickLeavePay" />
+                                    </td>
+                                    <td class="px-1 py-2 text-center">
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.VacationLeavePay" />
+                                    </td>
+                                    <td class="px-1 py-2 text-center">
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.CashAdvance" />
+                                    </td>
+                                    <td class="px-1 py-2 text-center border-r border-neutral-700">
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.ELoan" />
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                        ₱@emp.Reimbursement.ToString("N2")
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                        ₱@emp.HolidayPay.ToString("N2")
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                        ₱@emp.SickLeavePay.ToString("N2")
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                        ₱@emp.VacationLeavePay.ToString("N2")
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-red-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                        ₱@emp.CashAdvance.ToString("N2")
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-red-400 cursor-pointer hover:bg-neutral-600 border-r border-neutral-700" @onclick="() => StartEdit(emp)">
+                                        ₱@emp.ELoan.ToString("N2")
+                                    </td>
+                                }
+
+                                <td class="px-2 py-2 text-center text-gray-300">₱@emp.SSSDeduction.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-gray-300">₱@emp.PhilHealthDeduction.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-gray-300 border-r border-neutral-700">₱@emp.PagIBIGDeduction.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-red-400 font-semibold">₱@emp.TotalDeductions.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-green-400 font-bold">₱@emp.NetPay.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center">
+                                    @if (editingEmployee == emp.UserId)
+                                    {
+                                        <div class="flex flex-col gap-1">
+                                            <button class="bg-green-600 text-white rounded px-2 py-1 text-xs hover:bg-green-700" @onclick="SaveDeductions">
+                                                Save
+                                            </button>
+                                            <button class="bg-gray-500 text-white rounded px-2 py-1 text-xs hover:bg-gray-600" @onclick="CancelEdit">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    }
+                                    else if (emp.Status == PayrollStatus.Draft)
+                                    {
+                                        <button class="bg-blue-600 text-white rounded px-2 py-1 text-xs hover:bg-blue-700" @onclick="() => ApprovePayroll(emp.UserId)">
+                                            Approve
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-gray-500">Locked</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="bg-neutral-950 sticky bottom-0">
+                        <tr class="font-bold text-white">
+                            <td colspan="2" class="px-2 py-2 text-right border-r border-neutral-700">TOTALS:</td>
+                            <td colspan="4" class="px-2 py-2 border-r border-neutral-700"></td>
+                            <td class="px-2 py-2 text-center">₱@response.TotalBasicPay.ToString("N2")</td>
+                            <td class="px-2 py-2 text-center">₱@response.TotalOvertimePay.ToString("N2")</td>
+                            <td class="px-2 py-2 text-center">₱@response.TotalGrossPay.ToString("N2")</td>
+                            <td class="px-2 py-2 border-r border-neutral-700"></td>
+                            <td colspan="6" class="px-2 py-2 border-r border-neutral-700"></td>
+                            <td colspan="3" class="px-2 py-2 border-r border-neutral-700"></td>
+                            <td class="px-2 py-2 text-center text-red-400">₱@response.TotalDeductions.ToString("N2")</td>
+                            <td class="px-2 py-2 text-center text-green-400">₱@response.TotalNetPay.ToString("N2")</td>
+                            <td class="px-2 py-2"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private DateOnly WeekStart = DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek));
+    private WeeklyPayrollResponse? response;
+    private bool isLoading = false;
+    private string Message = "";
+    private bool IsError = false;
+
+    private Guid? editingEmployee = null;
+    private UpdateDeductionRequest editDeductions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (AuthState.UserType == "Admin")
+        {
+            await Load();
+        }
+    }
+
+    private async Task Load()
+    {
+        isLoading = true;
+        Message = "";
+        StateHasChanged();
+
+        try
+        {
+            response = await PayrollApi.GetWeeklyPayrollAsync(WeekStart);
+            if (response is null)
+            {
+                Message = "No payroll found for this week.";
+                IsError = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GeneratePayroll()
+    {
+        isLoading = true;
+        Message = "Generating payroll...";
+        IsError = false;
+        StateHasChanged();
+
+        try
+        {
+            response = await PayrollApi.GenerateWeeklyPayrollAsync(WeekStart);
+            if (response is not null)
+            {
+                Message = $"Payroll generated successfully for {response.Employees.Count} employees.";
+                IsError = false;
+            }
+            else
+            {
+                Message = "Failed to generate payroll.";
+                IsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void StartEdit(WeeklyPayrollDto emp)
+    {
+        if (emp.Status != PayrollStatus.Draft)
+        {
+            Message = "Only Draft payrolls can be edited.";
+            IsError = true;
+            return;
+        }
+
+        editingEmployee = emp.UserId;
+        editDeductions = new UpdateDeductionRequest
+        {
+            Reimbursement = emp.Reimbursement,
+            HolidayPay = emp.HolidayPay,
+            SickLeavePay = emp.SickLeavePay,
+            VacationLeavePay = emp.VacationLeavePay,
+            CashAdvance = emp.CashAdvance,
+            ELoan = emp.ELoan,
+            Notes = emp.Notes
+        };
+        Message = "";
+    }
+
+    private async Task SaveDeductions()
+    {
+        if (editingEmployee is null) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var updated = await PayrollApi.UpdateDeductionsAsync(editingEmployee.Value, WeekStart, editDeductions);
+            if (updated is not null)
+            {
+                // Update the response with the new values
+                var emp = response?.Employees.FirstOrDefault(e => e.UserId == editingEmployee.Value);
+                if (emp is not null)
+                {
+                    emp.Reimbursement = updated.Reimbursement;
+                    emp.HolidayPay = updated.HolidayPay;
+                    emp.SickLeavePay = updated.SickLeavePay;
+                    emp.VacationLeavePay = updated.VacationLeavePay;
+                    emp.CashAdvance = updated.CashAdvance;
+                    emp.ELoan = updated.ELoan;
+                    emp.TotalDeductions = updated.TotalDeductions;
+                    emp.NetPay = updated.NetPay;
+                    emp.Notes = updated.Notes;
+
+                    // Recalculate response totals
+                    if (response is not null)
+                    {
+                        response.TotalDeductions = response.Employees.Sum(e => e.TotalDeductions);
+                        response.TotalNetPay = response.Employees.Sum(e => e.NetPay);
+                    }
+                }
+
+                Message = "Deductions updated successfully.";
+                IsError = false;
+                editingEmployee = null;
+            }
+            else
+            {
+                Message = "Failed to update deductions.";
+                IsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelEdit()
+    {
+        editingEmployee = null;
+        Message = "";
+    }
+
+    private async Task ApprovePayroll(Guid userId)
+    {
+        if (!confirm($"Approve this payroll? It will be locked and cannot be edited."))
+            return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var updated = await PayrollApi.ApprovePayrollAsync(userId, WeekStart);
+            if (updated is not null)
+            {
+                var emp = response?.Employees.FirstOrDefault(e => e.UserId == userId);
+                if (emp is not null)
+                {
+                    emp.Status = updated.Status;
+                    emp.ApprovedAt = updated.ApprovedAt;
+
+                    // Update status counts
+                    if (response is not null)
+                    {
+                        response.DraftCount = response.Employees.Count(e => e.Status == PayrollStatus.Draft);
+                        response.ApprovedCount = response.Employees.Count(e => e.Status == PayrollStatus.Approved);
+                        response.PaidCount = response.Employees.Count(e => e.Status == PayrollStatus.Paid);
+                    }
+                }
+
+                Message = "Payroll approved successfully.";
+                IsError = false;
+            }
+            else
+            {
+                Message = "Failed to approve payroll.";
+                IsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool confirm(string message)
+    {
+        // In real implementation, use JS interop for confirm dialog
+        // For now, return true
+        return true;
+    }
+}
