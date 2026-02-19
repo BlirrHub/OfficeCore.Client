@@ -10,9 +10,9 @@
 }
 else
 {
-    <div class="mt-6 max-w-7xl bg-white border rounded-xl p-4">
+    <div class="mt-6 max-w-7xl bg-neutral-900 border rounded-xl p-4">
         <div class="flex justify-between items-center mb-4">
-            <h1 class="text-2xl font-bold">Employees</h1>
+            <h1 class="text-2xl text-white font-bold">Employees</h1>
             <button class="bg-black text-white border rounded-2xl p-2 px-6 py-2 hover:bg-gray-800" 
                     @onclick="NavigateToCreateEmployee">
                 Create Employee
@@ -29,41 +29,41 @@ else
         }
         else
         {
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+            <div class="overflow-x-auto max-h-[550px]">
+                <table class="min-w-full divide-y divide-neutral-500">
+                    <thead class="bg-neutral-900 sticky top-0 z-10">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider bg-neutral-950">
                                 Name
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                 Department
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                 Position
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                 Roles
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
                                 Status
                             </th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th class="px-6 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                    <tbody class="bg-neutral-600 divide-y divide-neutral-500">
                         @foreach (var employee in employees)
                         {
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            <tr class="hover:bg-neutral-800">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-50 bg-neutral-700">
                                     @employee.FirstName @employee.LastName
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                                     @(employee.Department ?? "-")
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-200">
                                     @(employee.Position ?? "-")
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -97,15 +97,25 @@ else
                                         </span>
                                     }
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                    <button class="text-indigo-600 hover:text-indigo-900" 
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
+                                    <div class="flex justify-end gap-2">
+                                        <button 
+                                            class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-white bg-neutral-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" 
                                             @onclick="@(() => Nav.NavigateTo($"/admin/employees/{employee.Id}"))">
-                                        Edit
-                                    </button>
-                                    <button class="text-indigo-600 hover:text-indigo-900" 
-                                            @onclick="@(() => DeleteEmployee(employee.Id))">
-                                        Delete
-                                    </button>
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                            Edit
+                                        </button>
+                                        <button 
+                                            class="inline-flex items-center px-3 py-1.5 border border-red-300 rounded-md text-sm font-medium text-red-700 bg-neutral-800 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" 
+                                            @onclick="@(() => ConfirmDelete(employee.Id, $"{employee.FirstName} {employee.LastName}"))">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                            </svg>
+                                            Delete
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -114,12 +124,51 @@ else
             </div>
         }
     </div>
+
+    @* Delete Confirmation Modal *@
+    @if (showDeleteConfirm)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="CancelDelete">
+            <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl" @onclick:stopPropagation="true">
+                <div class="flex items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Employee</h3>
+                        <p class="text-sm text-gray-600">
+                            Are you sure you want to delete <span class="font-semibold">@employeeToDeleteName</span>? This action cannot be undone.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        @onclick="CancelDelete">
+                        Cancel
+                    </button>
+                    <button 
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700"
+                        @onclick="ExecuteDelete">
+                        Delete Employee
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code 
 {
     private List<Employee>? employees;
     private bool isLoading = true;
+
+    // Delete confirmation state
+    private bool showDeleteConfirm;
+    private Guid employeeToDeleteId;
+    private string employeeToDeleteName = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -141,10 +190,27 @@ else
         isLoading = false;
     }
 
-    private async Task DeleteEmployee(Guid id)
+    private void ConfirmDelete(Guid id, string name)
     {
-        var ok = await AdminApi.DeleteEmployeeAsync(id);
+        employeeToDeleteId = id;
+        employeeToDeleteName = name;
+        showDeleteConfirm = true;
+    }
+
+    private void CancelDelete()
+    {
+        showDeleteConfirm = false;
+        employeeToDeleteId = Guid.Empty;
+        employeeToDeleteName = "";
+    }
+
+    private async Task ExecuteDelete()
+    {
+        var ok = await AdminApi.DeleteEmployeeAsync(employeeToDeleteId);
         if (ok)
+        {
             await GetEmployees();
+        }
+        CancelDelete();
     }
 }
