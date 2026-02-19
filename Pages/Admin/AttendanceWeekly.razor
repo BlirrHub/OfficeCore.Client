@@ -1,0 +1,133 @@
+@page "/admin/attendance-weekly"
+@using OfficeCore.Client.Models.Dtos
+
+@inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+
+@if (AuthState.UserType != "Admin")
+{
+    <p class="mt-2 text-red-600">Not authorized.</p>
+}
+else
+{
+    <div class="mt-6 max-w-7xl bg-white border rounded-xl p-4">
+        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div>
+                <h1 class="text-2xl font-bold">Weekly Attendance</h1>
+                <p class="text-sm text-gray-500">Pick the week start date (7-day view).</p>
+            </div>
+
+            <div class="flex items-end gap-2">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Week start</label>
+                    <input class="border rounded-lg px-3 py-2" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
+                </div>
+                <button class="bg-black text-white rounded-lg py-2 px-4" @onclick="Load">Load</button>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="text-sm @(IsError ? "text-red-600" : "text-green-700") mb-3">@Message</div>
+        }
+
+        @if (isLoading)
+        {
+            <p>Loading...</p>
+        }
+        else if (response is null)
+        {
+            <p class="text-gray-500">No data loaded.</p>
+        }
+        else if (response.Employees is null || response.Employees.Count == 0)
+        {
+            <p class="text-gray-500">No employees found.</p>
+        }
+        else
+        {
+            <div class="text-sm text-gray-600 mb-2">
+                Week: @response.WeekStart.ToString("yyyy-MM-dd") - @response.WeekEnd.ToString("yyyy-MM-dd")
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dept</th>
+                            @foreach (var day in response.Employees[0].Days)
+                            {
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    @day.Date.ToString("MM/dd")
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach (var emp in response.Employees)
+                        {
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                    @emp.FirstName @emp.LastName
+                                    @if (emp.BiometricId is not null)
+                                    {
+                                        <span class="text-xs text-gray-400">(#@emp.BiometricId)</span>
+                                    }
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">@(emp.Department ?? "-")</td>
+                                @foreach (var d in emp.Days)
+                                {
+                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                                        @FormatDay(d)
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private WeeklyAttendanceResponse? response;
+    private bool isLoading;
+
+    private string? Message;
+    private bool IsError;
+
+    private DateTime WeekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+
+    private async Task Load()
+    {
+        Message = null;
+        IsError = false;
+
+        var weekStart = DateOnly.FromDateTime(WeekStart);
+
+        isLoading = true;
+        response = await AdminApi.GetWeeklyAttendanceAsync(weekStart);
+        isLoading = false;
+
+        if (response is null)
+        {
+            IsError = true;
+            Message = "Failed to load weekly attendance.";
+        }
+    }
+
+    private static string FormatDay(WeeklyAttendanceDayDto d)
+    {
+        if (d.TimeIn is null && d.TimeOut is null && d.PunchCount == 0)
+            return "-";
+
+        var timeIn = d.TimeIn.HasValue ? d.TimeIn.Value.ToString("HH:mm") : "-";
+        var timeOut = d.TimeOut.HasValue ? d.TimeOut.Value.ToString("HH:mm") : "-";
+
+        if (d.IsIncomplete)
+            return $"{timeIn} - {timeOut} (inc)";
+
+        return $"{timeIn} - {timeOut}";
+    }
+}

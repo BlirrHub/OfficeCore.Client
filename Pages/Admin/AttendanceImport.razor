@@ -1,0 +1,215 @@
+@page "/admin/attendance-import"
+@using OfficeCore.Client.Models.Dtos
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+
+@if (AuthState.UserType != "Admin")
+{
+    <p class="mt-2 text-red-600">Not authorized.</p>
+}
+else
+{
+    <div class="mt-6 max-w-4xl bg-white border rounded-xl p-6">
+        <h1 class="text-2xl font-bold mb-2">Import Attendance</h1>
+        <p class="text-sm text-gray-500 mb-6">
+            Upload the Excel file (.xls or .xlsx) exported from the biometric machine. The file must contain the "Attend. Logs" sheet.
+        </p>
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="p-4 mb-4 rounded-lg @(IsError ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800")">
+                @Message
+            </div>
+        }
+
+        @if (result is not null)
+        {
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-semibold text-blue-900 mb-3">Import Summary</h3>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                        <span class="text-blue-700">Week:</span>
+                        <span class="ml-2 font-medium">@result.WeekStart.ToString("MM/dd") - @result.WeekEnd.ToString("MM/dd")</span>
+                    </div>
+                    <div>
+                        <span class="text-blue-700">Batch ID:</span>
+                        <span class="ml-2 font-mono text-xs">@result.BatchId.ToString().Substring(0, 8)</span>
+                    </div>
+                    <div>
+                        <span class="text-green-700">✓ Inserted:</span>
+                        <span class="ml-2 font-semibold">@result.InsertedCount</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">○ Skipped (duplicate):</span>
+                        <span class="ml-2">@result.SkippedDuplicateCount</span>
+                    </div>
+                    <div>
+                        <span class="text-orange-600">⚠ Unmatched employees:</span>
+                        <span class="ml-2">@result.UnmatchedEmployeeCount</span>
+                    </div>
+                    <div>
+                        <span class="text-red-600">✗ Errors:</span>
+                        <span class="ml-2">@result.ErrorCount</span>
+                    </div>
+                </div>
+
+                @if (result.SampleErrors.Count > 0)
+                {
+                    <div class="mt-4 pt-4 border-t border-blue-200">
+                        <h4 class="font-medium text-blue-900 mb-2">Sample Errors (first @result.SampleErrors.Count)</h4>
+                        <div class="space-y-2">
+                            @foreach (var error in result.SampleErrors)
+                            {
+                                <div class="text-xs bg-white rounded p-2 border border-red-200">
+                                    <span class="font-semibold text-red-700">@error.Message</span>
+                                    @if (error.BiometricId is not null)
+                                    {
+                                        <span class="text-gray-600"> - Biometric ID: @error.BiometricId</span>
+                                    }
+                                    @if (error.WorkDate is not null)
+                                    {
+                                        <span class="text-gray-600"> - Date: @error.WorkDate.Value.ToString("MM/dd/yyyy")</span>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(error.Reference))
+                                    {
+                                        <div class="text-gray-500 mt-1">@error.Reference</div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <InputFile OnChange="HandleFileSelected" accept=".xls,.xlsx" class="hidden" id="fileInput" />
+            <label for="fileInput" class="cursor-pointer flex flex-col items-center">
+                @if (selectedFile is null)
+                {
+                    <svg class="w-14 h-14 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <span class="text-sm text-gray-600">Click to select Excel file (.xls or .xlsx)</span>
+                    <span class="text-xs text-gray-400 mt-1">or drag and drop</span>
+                }
+                else
+                {
+                    <svg class="w-6 h-6 text-green-500 mb-2" fill="none" stroke="currentColor" viewBox="0 0 16 16">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span class="text-sm font-medium text-gray-700">@selectedFile.Name</span>
+                    <span class="text-xs text-gray-500">@FormatFileSize(selectedFile.Size)</span>
+                }
+            </label>
+        </div>
+
+        @if (selectedFile is not null)
+        {
+            <div class="mt-4 flex gap-3">
+                <button 
+                    class="bg-black text-white rounded-lg py-2 px-6 disabled:opacity-50 disabled:cursor-not-allowed"
+                    @onclick="UploadFile"
+                    disabled="@isUploading">
+                    @if (isUploading)
+                    {
+                        <span>Uploading...</span>
+                    }
+                    else
+                    {
+                        <span>Import Attendance</span>
+                    }
+                </button>
+                <button 
+                    class="border border-gray-300 rounded-lg py-2 px-4 hover:bg-gray-50"
+                    @onclick="ClearFile"
+                    disabled="@isUploading">
+                    Clear
+                </button>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private IBrowserFile? selectedFile;
+    private ImportAttendanceResponse? result;
+    private bool isUploading;
+
+    private string? Message;
+    private bool IsError;
+
+    private void HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        selectedFile = e.File;
+        result = null;
+        Message = null;
+        IsError = false;
+    }
+
+    private void ClearFile()
+    {
+        selectedFile = null;
+        result = null;
+        Message = null;
+        IsError = false;
+    }
+
+    private async Task UploadFile()
+    {
+        if (selectedFile is null)
+            return;
+
+        Message = null;
+        IsError = false;
+        isUploading = true;
+
+        try
+        {
+            // Max file size: 10 MB
+            const long maxFileSize = 10 * 1024 * 1024;
+            
+            if (selectedFile.Size > maxFileSize)
+            {
+                IsError = true;
+                Message = "File size exceeds 10 MB limit.";
+                isUploading = false;
+                return;
+            }
+
+            using var stream = selectedFile.OpenReadStream(maxFileSize);
+            result = await AdminApi.ImportAttendanceAsync(stream, selectedFile.Name);
+
+            if (result is null)
+            {
+                IsError = true;
+                Message = "Import failed. Please check the file format and try again.";
+            }
+            else
+            {
+                Message = $"Import completed: {result.InsertedCount} records inserted.";
+                IsError = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            IsError = true;
+            Message = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+        }
+    }
+
+    private static string FormatFileSize(long bytes)
+    {
+        if (bytes < 1024)
+            return $"{bytes} B";
+        if (bytes < 1024 * 1024)
+            return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / (1024.0 * 1024.0):F1} MB";
+    }
+}

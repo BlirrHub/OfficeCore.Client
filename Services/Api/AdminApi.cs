@@ -97,4 +97,63 @@ public class AdminApi
         var response = await _http.DeleteAsync($"api/admin/employees/{id}");
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<WeeklyAttendanceResponse?> GetWeeklyAttendanceAsync(DateOnly weekStart)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync($"api/admin/attendance/weekly?weekStart={weekStart:yyyy-MM-dd}");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<WeeklyAttendanceResponse>();
+    }
+
+    public async Task<ImportAttendanceResponse?> ImportAttendanceAsync(Stream fileStream, string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        using var content = new MultipartFormDataContent();
+        using var streamContent = new StreamContent(fileStream);
+        streamContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        content.Add(streamContent, "file", fileName);
+
+        var response = await _http.PostAsync("api/admin/attendance/import", content);
+        if (!response.IsSuccessStatusCode)
+        {
+            // Try to read error message from response
+            try
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                if (!string.IsNullOrWhiteSpace(errorContent))
+                {
+                    var errorObj = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, System.Text.Json.JsonElement>>(
+                        errorContent, 
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    
+                    if (errorObj?.ContainsKey("message") == true)
+                    {
+                        var message = errorObj["message"].GetString() ?? "Import failed";
+                        throw new Exception(message);
+                    }
+                }
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Ignore JSON parsing errors, fall through to return null
+            }
+            
+            return null;
+        }
+
+        return await response.Content.ReadFromJsonAsync<ImportAttendanceResponse>();
+    }
 }
