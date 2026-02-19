@@ -11,5 +11,9 @@ public class CreateEmployeeRequest
     public string? Department { get; set; }
     public string? Position { get; set; }
 
+    public int? BiometricId { get; set; }
+    public decimal DailyRate { get; set; } = 0m;
+    public decimal StdHoursPerDay { get; set; } = 8m;
+
     public List<string> Roles { get; set; } = new();
 }

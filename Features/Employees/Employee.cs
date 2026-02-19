@@ -8,6 +8,11 @@ public class Employee
     public string LastName { get; set; } = string.Empty;
     public string? Department { get; set; }
     public string? Position { get; set; }
+
+    public int? BiometricId { get; set; }
+    public decimal DailyRate { get; set; }
+    public decimal StdHoursPerDay { get; set; }
+
     public bool IsActive { get; set; }
     public bool MustChangePassword { get; set; }
     public List<string> Roles { get; set; } = new();
