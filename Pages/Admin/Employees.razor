@@ -103,7 +103,7 @@ else
                                         Edit
                                     </button>
                                     <button class="text-indigo-600 hover:text-indigo-900" 
-                                            @onclick="@(() => Nav.NavigateTo($"/admin/employees/{employee.Id}"))">
+                                            @onclick="@(() => DeleteEmployee(employee.Id))">
                                         Delete
                                     </button>
                                 </td>
@@ -139,5 +139,12 @@ else
         isLoading = true;
         employees = await AdminApi.GetAllEmployeesAsync();
         isLoading = false;
+    }
+
+    private async Task DeleteEmployee(Guid id)
+    {
+        var ok = await AdminApi.DeleteEmployeeAsync(id);
+        if (ok)
+            await GetEmployees();
     }
 }
