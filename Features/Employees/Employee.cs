@@ -13,6 +13,10 @@ public class Employee
     public decimal DailyRate { get; set; }
     public decimal StdHoursPerDay { get; set; }
 
+    public TimeOnly? SchedTimeIn { get; set; }
+    public TimeOnly? SchedTimeOut { get; set; }
+    public bool IsOTEnabled { get; set; }
+
     public bool IsActive { get; set; }
     public bool MustChangePassword { get; set; }
     public List<string> Roles { get; set; } = new();

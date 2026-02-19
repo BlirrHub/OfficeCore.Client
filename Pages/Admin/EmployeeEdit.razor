@@ -42,6 +42,22 @@ else
                 <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Std hours/day" @bind="employee.StdHoursPerDay" />
             </div>
 
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="text-sm text-gray-600">Schedule Time In</label>
+                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeIn" />
+                </div>
+                <div>
+                    <label class="text-sm text-gray-600">Schedule Time Out</label>
+                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeOut" />
+                </div>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm">
+                <input type="checkbox" @bind="employee.IsOTEnabled" />
+                OT Enabled
+            </label>
+
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" @bind="employee.IsActive" />
                 Active

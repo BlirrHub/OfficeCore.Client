@@ -15,5 +15,9 @@ public class CreateEmployeeRequest
     public decimal DailyRate { get; set; } = 0m;
     public decimal StdHoursPerDay { get; set; } = 8m;
 
+    public TimeOnly? SchedTimeIn { get; set; }
+    public TimeOnly? SchedTimeOut { get; set; }
+    public bool IsOTEnabled { get; set; } = false;
+
     public List<string> Roles { get; set; } = new();
 }
