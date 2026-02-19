@@ -15,5 +15,6 @@ builder.Services.AddScoped(_ =>
 builder.Services.AddSingleton<AuthState>();
 builder.Services.AddScoped<AuthApi>();
 builder.Services.AddScoped<AdminApi>();
+builder.Services.AddScoped<PayrollApi>();
 
 await builder.Build().RunAsync();

@@ -82,6 +82,9 @@ public class AdminApi
             employee.SchedTimeIn,
             employee.SchedTimeOut,
             employee.IsOTEnabled,
+            employee.HasSSSDeduction,
+            employee.HasPhilHealthDeduction,
+            employee.HasPagIBIGDeduction,
             employee.IsActive
         };
 
