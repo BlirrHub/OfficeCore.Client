@@ -1,0 +1,54 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "watch",
+			"path": "tailwind",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: watch - tailwind",
+			"detail": "tailwindcss -c tailwind.config.cjs -i input.css -o ../wwwroot/css/app.css --watch"
+		},
+		{
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["watch"],
+			"cwd": "${workspaceFolder}/OfficeCore.Client",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": "$msCompile",
+			"label": "dotnet watch - client",
+			"detail": "dotnet watch run for OfficeCore.Client"
+		},
+		{
+			"type": "shell",
+			"command": "dotnet",
+			"args": ["watch"],
+			"cwd": "${workspaceFolder}/OfficeCore.Server",
+			"group": "build",
+			"isBackground": true,
+			"problemMatcher": "$msCompile",
+			"label": "dotnet watch - server",
+			"detail": "dotnet watch run for OfficeCore.Server"
+		},
+		{
+			"type": "shell",
+			"command": "echo",
+			"args": ["Running all watch tasks..."],
+			"group": "build",
+			"dependsOn": [
+				"npm: watch - tailwind",
+				"dotnet watch - client",
+				"dotnet watch - server"
+			],
+			"problemMatcher": [],
+			"label": "watch all",
+			"detail": "Run all watch tasks (Tailwind, Client, and Server)",
+			"presentation": {
+				"reveal": "always",
+				"panel": "new"
+			}
+		}
+	]
+}
