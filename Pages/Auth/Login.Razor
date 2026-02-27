@@ -4,6 +4,8 @@
 @inject NavigationManager Nav 
 @inject OfficeCore.Client.Services.Api.AuthApi AuthApi
 @inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject Microsoft.JSInterop.IJSRuntime JS
+@inject HttpClient Http
 
 <div class="min-h-5 flex bg-gray-100 p-1">
     <div class="w-full max-w-md bg-white rounded-xl shadow p-6">
@@ -58,6 +60,8 @@
         }
 
         AuthState.Set(result.AccessToken, result.UserType, result.Roles);
+        await AuthState.SaveAsync(JS);
+        Http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", result.AccessToken);
 
         if (result.MustChangePassword)
         {

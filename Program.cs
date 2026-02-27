@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using OfficeCore.Client;
+using System.Net.Http.Headers;
+using Microsoft.JSInterop;
 using OfficeCore.Client.Services.Api;
 using OfficeCore.Client.Services.State;
 
@@ -8,7 +10,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://localhost:6969/";
+var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://192.168.100.71:6969/";
 builder.Services.AddScoped(_ => 
     new HttpClient { BaseAddress = new Uri(apiUrl) });
 
@@ -17,4 +19,16 @@ builder.Services.AddScoped<AuthApi>();
 builder.Services.AddScoped<AdminApi>();
 builder.Services.AddScoped<PayrollApi>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+var js = host.Services.GetRequiredService<IJSRuntime>();
+var auth = host.Services.GetRequiredService<AuthState>();
+await auth.LoadAsync(js);
+
+var http = host.Services.GetRequiredService<HttpClient>();
+if (auth.IsAuthenticated && !string.IsNullOrWhiteSpace(auth.AccessToken))
+{
+    http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+}
+
+await host.RunAsync();
