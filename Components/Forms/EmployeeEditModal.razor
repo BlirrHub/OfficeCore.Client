@@ -33,15 +33,13 @@
                 <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="employee.DailyRate" />
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="text-sm text-gray-600">Schedule Time In</label>
-                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeIn" />
-                </div>
-                <div>
-                    <label class="text-sm text-gray-600">Schedule Time Out</label>
-                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeOut" />
-                </div>
+            <div>
+                <label class="text-sm text-gray-600">Schedule</label>
+                <select class="border rounded-lg px-3 py-2 w-full" @bind="SelectedSchedule">
+                    <option value="8-5">8:00 am - 5:00 pm</option>
+                    <option value="9-6">9:00 am - 6:00 pm</option>
+                    <option value="none">None</option>
+                </select>
             </div>
 
             <label class="flex items-center gap-2 text-sm">
@@ -98,6 +96,7 @@
 
     private Employee? employee;
     private bool isLoading = true;
+    private string SelectedSchedule = "8-5";
 
     private string? message;
     private bool isError;
@@ -115,6 +114,24 @@
         message = null;
         isLoading = true;
         employee = await AdminApi.GetEmployeeByIdAsync(EmployeeId);
+        
+        // Set schedule dropdown based on employee's current schedule
+        if (employee != null)
+        {
+            if (employee.SchedTimeIn == TimeOnly.Parse("08:00") && employee.SchedTimeOut == TimeOnly.Parse("17:00"))
+            {
+                SelectedSchedule = "8-5";
+            }
+            else if (employee.SchedTimeIn == TimeOnly.Parse("09:00") && employee.SchedTimeOut == TimeOnly.Parse("18:00"))
+            {
+                SelectedSchedule = "9-6";
+            }
+            else
+            {
+                SelectedSchedule = "none";
+            }
+        }
+        
         isLoading = false;
     }
 
@@ -124,6 +141,23 @@
             return;
 
         message = null;
+
+        // Apply schedule selection to employee
+        if (SelectedSchedule == "8-5")
+        {
+            employee.SchedTimeIn = TimeOnly.Parse("08:00");
+            employee.SchedTimeOut = TimeOnly.Parse("17:00");
+        }
+        else if (SelectedSchedule == "9-6")
+        {
+            employee.SchedTimeIn = TimeOnly.Parse("09:00");
+            employee.SchedTimeOut = TimeOnly.Parse("18:00");
+        }
+        else
+        {
+            employee.SchedTimeIn = null;
+            employee.SchedTimeOut = null;
+        }
 
         var ok = await AdminApi.UpdateEmployeeAsync(EmployeeId, employee);
         isError = !ok;
