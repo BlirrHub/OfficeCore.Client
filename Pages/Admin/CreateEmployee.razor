@@ -18,7 +18,6 @@ else
 
         <div class="mt-4 grid grid-cols-1 gap-3">
             <input class="border rounded-lg px-3 py-2" placeholder="Username" @bind="Req.Username" />
-            <input class="border rounded-lg px-3 py-2" placeholder="Temp Password" @bind="Req.TempPassword" />
 
             <div class="grid grid-cols-2 gap-3">
                 <input class="border rounded-lg px-3 py-2" placeholder="First name" @bind="Req.FirstName" />
@@ -31,18 +30,15 @@ else
             <div class="grid grid-cols-3 gap-3">
                 <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="Req.BiometricId" />
                 <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="Req.DailyRate" />
-                <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Std hours/day" @bind="Req.StdHoursPerDay" />
             </div>
 
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="text-sm text-gray-600">Schedule Time In</label>
-                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="Req.SchedTimeIn" />
-                </div>
-                <div>
-                    <label class="text-sm text-gray-600">Schedule Time Out</label>
-                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="Req.SchedTimeOut" />
-                </div>
+            <div>
+                <label class="text-sm text-gray-600">Schedule</label>
+                <select class="border rounded-lg px-3 py-2 w-full" @bind="SelectedSchedule">
+                    <option value="8-5">8:00 am - 5:00 pm</option>
+                    <option value="9-6">9:00 am - 6:00 pm</option>
+                    <option value="none">None</option>
+                </select>
             </div>
 
             <label class="flex items-center gap-2 text-sm">
@@ -88,6 +84,7 @@ else
 @code {
     private CreateEmployeeRequest Req = new();
     private string RolesInput = "";
+    private string SelectedSchedule = "8-5";
     private string? Message;
     private bool IsError;
 
@@ -95,9 +92,29 @@ else
     {
         Message = null;
 
+        // set default temp password and apply schedule selection
+        Req.TempPassword = "password";
+
         Req.Roles = RolesInput
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
+
+        // map schedule dropdown to time fields
+        if (SelectedSchedule == "8-5")
+        {
+            Req.SchedTimeIn = TimeOnly.Parse("08:00");
+            Req.SchedTimeOut = TimeOnly.Parse("17:00");
+        }
+        else if (SelectedSchedule == "9-6")
+        {
+            Req.SchedTimeIn = TimeOnly.Parse("09:00");
+            Req.SchedTimeOut = TimeOnly.Parse("18:00");
+        }
+        else
+        {
+            Req.SchedTimeIn = null;
+            Req.SchedTimeOut = null;
+        }
 
         var ok = await AdminApi.CreateEmployeeAsync(Req);
 

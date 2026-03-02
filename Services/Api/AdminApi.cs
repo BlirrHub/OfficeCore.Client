@@ -78,7 +78,6 @@ public class AdminApi
             employee.Position,
             employee.BiometricId,
             employee.DailyRate,
-            employee.StdHoursPerDay,
             employee.SchedTimeIn,
             employee.SchedTimeOut,
             employee.IsOTEnabled,
@@ -87,6 +86,7 @@ public class AdminApi
             employee.HasPagIBIGDeduction,
             employee.IsActive
         };
+                // StdHoursPerDay removed
 
         var response = await _http.PutAsJsonAsync($"api/admin/employees/{id}", payload);
         return response.IsSuccessStatusCode;

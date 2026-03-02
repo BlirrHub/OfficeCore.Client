@@ -13,7 +13,7 @@ public class CreateEmployeeRequest
 
     public int? BiometricId { get; set; }
     public decimal DailyRate { get; set; } = 0m;
-    public decimal StdHoursPerDay { get; set; } = 8m;
+    // StdHoursPerDay removed; server applies default 8 hours
 
     public TimeOnly? SchedTimeIn { get; set; }
     public TimeOnly? SchedTimeOut { get; set; }

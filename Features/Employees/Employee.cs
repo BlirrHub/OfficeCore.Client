@@ -11,7 +11,7 @@ public class Employee
 
     public int? BiometricId { get; set; }
     public decimal DailyRate { get; set; }
-    public decimal StdHoursPerDay { get; set; }
+    // StdHoursPerDay removed; client relies on server default (8h) for calculations
 
     public TimeOnly? SchedTimeIn { get; set; }
     public TimeOnly? SchedTimeOut { get; set; }
