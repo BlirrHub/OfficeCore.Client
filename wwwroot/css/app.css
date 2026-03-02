@@ -63,6 +63,7 @@
     --container-xl: 36rem;
     --container-2xl: 42rem;
     --container-4xl: 56rem;
+    --container-6xl: 72rem;
     --container-7xl: 80rem;
     --text-xs: 0.75rem;
     --text-xs--line-height: calc(1 / 0.75);
@@ -273,6 +274,9 @@
   .mx-auto {
     margin-inline: auto;
   }
+  .my-8 {
+    margin-block: calc(var(--spacing) * 8);
+  }
   .mt-1 {
     margin-top: calc(var(--spacing) * 1);
   }
@@ -314,6 +318,9 @@
   }
   .ml-4 {
     margin-left: calc(var(--spacing) * 4);
+  }
+  .ml-auto {
+    margin-left: auto;
   }
   .block {
     display: block;
@@ -363,6 +370,9 @@
   .max-h-\[550px\] {
     max-height: 550px;
   }
+  .max-h-\[calc\(100vh-200px\)\] {
+    max-height: calc(100vh - 200px);
+  }
   .min-h-\[calc\(100vh-56px\)\] {
     min-height: calc(100vh - 56px);
   }
@@ -404,6 +414,9 @@
   }
   .max-w-4xl {
     max-width: var(--container-4xl);
+  }
+  .max-w-6xl {
+    max-width: var(--container-6xl);
   }
   .max-w-7xl {
     max-width: var(--container-7xl);
@@ -579,6 +592,9 @@
   }
   .border-blue-200 {
     border-color: var(--color-blue-200);
+  }
+  .border-gray-200 {
+    border-color: var(--color-gray-200);
   }
   .border-gray-300 {
     border-color: var(--color-gray-300);
@@ -891,6 +907,11 @@
     --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 8px 10px -6px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
+  .transition-colors {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
   .transition-transform {
     transition-property: transform, translate, scale, rotate;
     transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
@@ -984,6 +1005,13 @@
     &:hover {
       @media (hover: hover) {
         color: var(--color-gray-600);
+      }
+    }
+  }
+  .hover\:text-gray-700 {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-gray-700);
       }
     }
   }

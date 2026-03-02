@@ -1,0 +1,152 @@
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Components.Common
+@inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+
+<Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Create Employee" Size="Modal.ModalSize.Medium">
+    <div class="grid grid-cols-1 gap-3">
+        <input class="border rounded-lg px-3 py-2" placeholder="Username" @bind="Req.Username" />
+
+        <div class="grid grid-cols-2 gap-3">
+            <input class="border rounded-lg px-3 py-2" placeholder="First name" @bind="Req.FirstName" />
+            <input class="border rounded-lg px-3 py-2" placeholder="Last name" @bind="Req.LastName" />
+        </div>
+
+        <input class="border rounded-lg px-3 py-2" placeholder="Department" @bind="Req.Department" />
+        <input class="border rounded-lg px-3 py-2" placeholder="Position" @bind="Req.Position" />
+
+        <div class="grid grid-cols-2 gap-3">
+            <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="Req.BiometricId" />
+            <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="Req.DailyRate" />
+        </div>
+
+        <div>
+            <label class="text-sm text-gray-600">Schedule</label>
+            <select class="border rounded-lg px-3 py-2 w-full" @bind="SelectedSchedule">
+                <option value="8-5">8:00 am - 5:00 pm</option>
+                <option value="9-6">9:00 am - 6:00 pm</option>
+                <option value="none">None</option>
+            </select>
+        </div>
+
+        <label class="flex items-center gap-2 text-sm">
+            <input type="checkbox" @bind="Req.IsOTEnabled" />
+            OT Enabled
+        </label>
+
+        <div class="border rounded-lg p-3 bg-gray-50">
+            <p class="text-sm font-semibold mb-2 text-gray-700">Government Deductions</p>
+            <div class="grid grid-cols-3 gap-2">
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" @bind="Req.HasSSSDeduction" />
+                    SSS
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" @bind="Req.HasPhilHealthDeduction" />
+                    PhilHealth
+                </label>
+                <label class="flex items-center gap-2 text-sm">
+                    <input type="checkbox" @bind="Req.HasPagIBIGDeduction" />
+                    Pag-IBIG
+                </label>
+            </div>
+        </div>
+
+        <input class="border rounded-lg px-3 py-2"
+               placeholder="Roles (comma separated: HR,Payroll)"
+               @bind="RolesInput" />
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="text-sm @(IsError ? "text-red-600" : "text-green-700")">@Message</div>
+        }
+
+        <div class="flex gap-2">
+            <button class="bg-black text-white rounded-lg py-2 px-4 flex-1 hover:bg-gray-800"
+                    @onclick="CreateNewEmployee">
+                Create
+            </button>
+            <button class="border border-gray-300 rounded-lg py-2 px-4 text-gray-700 hover:bg-gray-50"
+                    @onclick="Cancel">
+                Cancel
+            </button>
+        </div>
+    </div>
+</Modal>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnEmployeeCreated { get; set; }
+
+    private CreateEmployeeRequest Req = new();
+    private string RolesInput = "";
+    private string SelectedSchedule = "8-5";
+    private string? Message;
+    private bool IsError;
+
+    private async Task CreateNewEmployee()
+    {
+        Message = null;
+
+        // set default temp password and apply schedule selection
+        Req.TempPassword = "password";
+
+        Req.Roles = RolesInput
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
+
+        // map schedule dropdown to time fields
+        if (SelectedSchedule == "8-5")
+        {
+            Req.SchedTimeIn = TimeOnly.Parse("08:00");
+            Req.SchedTimeOut = TimeOnly.Parse("17:00");
+        }
+        else if (SelectedSchedule == "9-6")
+        {
+            Req.SchedTimeIn = TimeOnly.Parse("09:00");
+            Req.SchedTimeOut = TimeOnly.Parse("18:00");
+        }
+        else
+        {
+            Req.SchedTimeIn = null;
+            Req.SchedTimeOut = null;
+        }
+
+        var ok = await AdminApi.CreateEmployeeAsync(Req);
+
+        IsError = !ok;
+        Message = ok ? "Employee created." : "Failed to create employee (check token/roles/server).";
+
+        if (ok)
+        {
+            // Reset form
+            await Task.Delay(1000); // Show success message briefly
+            Req = new();
+            RolesInput = "";
+            SelectedSchedule = "8-5";
+            Message = null;
+            
+            // Close modal and notify parent
+            await CloseModal();
+            await OnEmployeeCreated.InvokeAsync();
+        }
+    }
+
+    private async Task Cancel()
+    {
+        // Reset form
+        Req = new();
+        RolesInput = "";
+        SelectedSchedule = "8-5";
+        Message = null;
+        IsError = false;
+        
+        await CloseModal();
+    }
+
+    private async Task CloseModal()
+    {
+        IsOpen = false;
+        await IsOpenChanged.InvokeAsync(IsOpen);
+    }
+}

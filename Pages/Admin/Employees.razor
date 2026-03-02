@@ -3,6 +3,7 @@
 @inject OfficeCore.Client.Services.State.AuthState AuthState
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
 @using OfficeCore.Client.Features.Employees
+@using OfficeCore.Client.Components.Forms
 
 @if (AuthState.UserType != "Admin")
 {
@@ -14,7 +15,7 @@ else
         <div class="flex justify-between items-center mb-4">
             <h1 class="text-2xl text-white font-bold">Employees</h1>
             <button class="bg-black text-white border rounded-2xl p-2 px-6 py-2 hover:bg-gray-800" 
-                    @onclick="NavigateToCreateEmployee">
+                    @onclick="OpenCreateModal">
                 Create Employee
             </button>
         </div>
@@ -101,7 +102,7 @@ else
                                     <div class="flex justify-end gap-2">
                                         <button 
                                             class="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-white bg-neutral-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" 
-                                            @onclick="@(() => Nav.NavigateTo($"/admin/employees/{employee.Id}"))">
+                                            @onclick="@(() => OpenEditModal(employee.Id))">
                                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                             </svg>
@@ -124,6 +125,17 @@ else
             </div>
         }
     </div>
+
+    @* Employee Create Modal *@
+    <EmployeeCreateModal IsOpen="showCreateModal" 
+                         IsOpenChanged="(value) => showCreateModal = value"
+                         OnEmployeeCreated="OnEmployeeCreated" />
+
+    @* Employee Edit Modal *@
+    <EmployeeEditModal IsOpen="showEditModal" 
+                       IsOpenChanged="(value) => showEditModal = value"
+                       EmployeeId="employeeToEditId"
+                       OnEmployeeUpdated="OnEmployeeUpdated" />
 
     @* Delete Confirmation Modal *@
     @if (showDeleteConfirm)
@@ -165,6 +177,13 @@ else
     private List<Employee>? employees;
     private bool isLoading = true;
 
+    // Create modal state
+    private bool showCreateModal;
+
+    // Edit modal state
+    private bool showEditModal;
+    private Guid employeeToEditId;
+
     // Delete confirmation state
     private bool showDeleteConfirm;
     private Guid employeeToDeleteId;
@@ -178,9 +197,25 @@ else
         }
     }
 
-    private void NavigateToCreateEmployee()
+    private void OpenCreateModal()
     {
-        Nav.NavigateTo("/admin/create-employee");
+        showCreateModal = true;
+    }
+
+    private void OpenEditModal(Guid id)
+    {
+        employeeToEditId = id;
+        showEditModal = true;
+    }
+
+    private async Task OnEmployeeCreated()
+    {
+        await GetEmployees();
+    }
+
+    private async Task OnEmployeeUpdated()
+    {
+        await GetEmployees();
     }
 
     private async Task GetEmployees()
