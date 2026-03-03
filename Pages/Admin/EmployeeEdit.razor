@@ -114,7 +114,7 @@ else
 
         if (AuthState.UserType != "Admin")
         {
-            isLoading = false;
+            Nav.NavigateTo("/login", true);
             return;
         }
 

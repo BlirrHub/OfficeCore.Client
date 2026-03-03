@@ -200,10 +200,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthState.UserType == "Admin")
+        if (AuthState.UserType != "Admin")
         {
-            await GetEmployees();
+            Nav.NavigateTo("/login", true);
+            return;
         }
+        
+        await GetEmployees();
     }
 
     private void OpenCreateModal()

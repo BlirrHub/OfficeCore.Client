@@ -43,6 +43,12 @@ public class WeeklyPayrollDto
     public decimal SSSDeduction { get; set; }
     public decimal PhilHealthDeduction { get; set; }
     public decimal PagIBIGDeduction { get; set; }
+    public bool ApplySSSDeduction { get; set; }
+    public bool ApplyPhilHealthDeduction { get; set; }
+    public bool ApplyPagIBIGDeduction { get; set; }
+    public bool HasSSSDeduction { get; set; }
+    public bool HasPhilHealthDeduction { get; set; }
+    public bool HasPagIBIGDeduction { get; set; }
 
     // Totals
     public decimal TotalDeductions { get; set; }

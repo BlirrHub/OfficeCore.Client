@@ -2,6 +2,7 @@
 @using OfficeCore.Client.Models.Dtos
 @using Microsoft.AspNetCore.Components.Forms
 
+@inject NavigationManager Nav
 @inject OfficeCore.Client.Services.State.AuthState AuthState
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
 
@@ -140,6 +141,14 @@ else
 
     private string? Message;
     private bool IsError;
+
+    protected override void OnInitialized()
+    {
+        if (AuthState.UserType != "Admin")
+        {
+            Nav.NavigateTo("/login", true);
+        }
+    }
 
     private void HandleFileSelected(InputFileChangeEventArgs e)
     {

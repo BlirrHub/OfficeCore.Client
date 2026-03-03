@@ -88,6 +88,14 @@ else
     private string? Message;
     private bool IsError;
 
+    protected override void OnInitialized()
+    {
+        if (AuthState.UserType != "Admin")
+        {
+            Nav.NavigateTo("/login", true);
+        }
+    }
+
     private async Task CreateNewEmployee()
     {
         Message = null;

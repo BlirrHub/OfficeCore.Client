@@ -206,10 +206,13 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthState.UserType == "Admin")
+        if (AuthState.UserType != "Admin")
         {
-            await LoadBatches();
+            Nav.NavigateTo("/login", true);
+            return;
         }
+        
+        await LoadBatches();
     }
 
     private async Task LoadBatches()

@@ -146,45 +146,62 @@ else
                                             <div @onclick="() => StartEdit(emp.UserId, d)" class="cursor-pointer hover:bg-neutral-800 p-1 rounded">
                                                 @if (d.PunchPairs.Any())
                                                 {
-                                                    @* Display all punch pairs with hours *@
-                                                    <div class="space-y-1">
+                                                    @* Display all punch pairs with actual and rounded times *@
+                                                    <div class="space-y-1.5">
                                                         @foreach (var pair in d.PunchPairs)
                                                         {
-                                                            <div class="flex items-center justify-between gap-2">
+                                                            <div class="space-y-0.5">
                                                                 @if (pair.TimeOut.HasValue)
                                                                 {
-                                                                    <span class="font-medium text-gray-50">
+                                                                    @* Actual times *@
+                                                                    <div class="font-medium text-gray-50 text-xs">
                                                                         @pair.TimeIn.ToString("HH:mm") - @pair.TimeOut.Value.ToString("HH:mm")
-                                                                    </span>
-                                                                    <span class="text-xs text-gray-300 font-semibold">
-                                                                        (@pair.Hours?.ToString("0.00")h)
-                                                                    </span>
+                                                                    </div>
+                                                                    @* Rounded times *@
+                                                                    @if (pair.CalculatedTimeIn.HasValue || pair.CalculatedTimeOut.HasValue)
+                                                                    {
+                                                                        <div class="text-gray-300 text-xs">
+                                                                            → @pair.CalculatedTimeIn?.ToString("HH:mm") - @pair.CalculatedTimeOut?.ToString("HH:mm")
+                                                                        </div>
+                                                                    }
+                                                                    @* Hours *@
+                                                                    <div class="text-xs text-blue-300 font-semibold">
+                                                                        @(pair.CalculatedHours?.ToString("0.00") ?? pair.Hours?.ToString("0.00"))h
+                                                                    </div>
                                                                 }
                                                                 else
                                                                 {
-                                                                    <span class="font-medium text-orange-400">
+                                                                    @* Incomplete pair *@
+                                                                    <div class="font-medium text-orange-400 text-xs">
                                                                         @pair.TimeIn.ToString("HH:mm") - ?
-                                                                    </span>
-                                                                    <span class="text-xs text-orange-400 font-semibold">
+                                                                    </div>
+                                                                    @if (pair.CalculatedTimeIn.HasValue)
+                                                                    {
+                                                                        <div class="text-orange-300 text-xs">
+                                                                            → @pair.CalculatedTimeIn.Value.ToString("HH:mm") - ?
+                                                                        </div>
+                                                                    }
+                                                                    <div class="text-xs text-orange-400 font-semibold">
                                                                         (incomplete)
-                                                                    </span>
+                                                                    </div>
                                                                 }
                                                             </div>
                                                         }
+                                                        @* Total - show at bottom after all pairs *@
                                                         @if (d.PunchPairs.Count > 1)
                                                         {
-                                                            var totalHours = d.PunchPairs.Where(p => p.Hours.HasValue).Sum(p => p.Hours!.Value);
+                                                            var totalHours = d.PunchPairs.Where(p => p.CalculatedHours.HasValue).Sum(p => p.CalculatedHours!.Value);
+                                                            if (totalHours == 0)
+                                                            {
+                                                                totalHours = d.PunchPairs.Where(p => p.Hours.HasValue).Sum(p => p.Hours!.Value);
+                                                            }
                                                             var hasIncomplete = d.PunchPairs.Any(p => !p.TimeOut.HasValue);
-                                                            <div class="pt-1 mt-1 border-t border-gray-400 flex items-center justify-between">
+                                                            <div class="pt-1.5 mt-1.5 border-t border-gray-400 flex items-center justify-between">
                                                                 <span class="text-xs text-blue-300 font-bold">Total:</span>
                                                                 <span class="text-xs text-blue-300 font-bold">
                                                                     @totalHours.ToString("0.00")h@(hasIncomplete ? "*" : "")
                                                                 </span>
                                                             </div>
-                                                        }
-                                                        @if (d.IsIncomplete)
-                                                        {
-                                                            <div class="text-orange-500 text-xs mt-1">⚠ Incomplete</div>
                                                         }
                                                     </div>
                                                 }
@@ -413,6 +430,14 @@ else
     private bool IsError;
 
     private DateTime WeekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+
+    protected override void OnInitialized()
+    {
+        if (AuthState.UserType != "Admin")
+        {
+            Nav.NavigateTo("/login", true);
+        }
+    }
 
     // Editing state
     private string? editingCell;

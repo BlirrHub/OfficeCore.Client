@@ -19,6 +19,24 @@ else
             </div>
 
             <div class="flex items-end gap-2">
+                @if (response is not null && response.Employees.Any(e => e.Status == PayrollStatus.Draft))
+                {
+                    @if (!isEditMode)
+                    {
+                        <button class="bg-yellow-600 text-white rounded-lg py-2 px-4 hover:bg-yellow-700" @onclick="StartEditAll">
+                            Edit All
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="SaveAllDeductions">
+                            Save All
+                        </button>
+                        <button class="bg-gray-500 text-white rounded-lg py-2 px-4 hover:bg-gray-600" @onclick="CancelEditAll">
+                            Cancel
+                        </button>
+                    }
+                }
                 <button class="bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="GeneratePayroll">
                     Generate Payroll
                 </button>
@@ -62,7 +80,7 @@ else
                             <th rowspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Status</th>
                             <th colspan="4" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Work Hours</th>
                             <th colspan="4" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Pay</th>
-                            <th colspan="6" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Adjustments (Editable)</th>
+                            <th colspan="6" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Adjustments</th>
                             <th colspan="3" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Gov't Deductions</th>
                             <th colspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider">Totals</th>
                             <th rowspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider">Action</th>
@@ -124,75 +142,122 @@ else
                                 <td class="px-2 py-2 text-center text-gray-400 text-xs border-r border-neutral-700">₱@emp.DailyRate.ToString("N2")</td>
                                 
                                 @* Editable Adjustments *@
-                                @if (editingEmployee == emp.UserId)
+                                @if (isEditMode && emp.Status == PayrollStatus.Draft && editedPayrolls.ContainsKey(emp.UserId))
                                 {
+                                    var edited = editedPayrolls[emp.UserId];
                                     <td class="px-1 py-2 text-center">
-                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.Reimbursement" />
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="edited.Reimbursement" />
                                     </td>
                                     <td class="px-1 py-2 text-center">
-                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.HolidayPay" />
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="edited.HolidayPay" />
                                     </td>
                                     <td class="px-1 py-2 text-center">
-                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.SickLeavePay" />
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="edited.SickLeavePay" />
                                     </td>
                                     <td class="px-1 py-2 text-center">
-                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.VacationLeavePay" />
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="edited.VacationLeavePay" />
                                     </td>
                                     <td class="px-1 py-2 text-center">
-                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.CashAdvance" />
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="edited.CashAdvance" />
                                     </td>
                                     <td class="px-1 py-2 text-center border-r border-neutral-700">
-                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="editDeductions.ELoan" />
+                                        <input type="number" step="0.01" class="w-20 bg-white text-black rounded px-1 py-1 text-xs text-center" @bind="edited.ELoan" />
                                     </td>
                                 }
                                 else
                                 {
-                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                    <td class="px-2 py-2 text-center text-green-400">
                                         ₱@emp.Reimbursement.ToString("N2")
                                     </td>
-                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                    <td class="px-2 py-2 text-center text-green-400">
                                         ₱@emp.HolidayPay.ToString("N2")
                                     </td>
-                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                    <td class="px-2 py-2 text-center text-green-400">
                                         ₱@emp.SickLeavePay.ToString("N2")
                                     </td>
-                                    <td class="px-2 py-2 text-center text-green-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                    <td class="px-2 py-2 text-center text-green-400">
                                         ₱@emp.VacationLeavePay.ToString("N2")
                                     </td>
-                                    <td class="px-2 py-2 text-center text-red-400 cursor-pointer hover:bg-neutral-600" @onclick="() => StartEdit(emp)">
+                                    <td class="px-2 py-2 text-center text-red-400">
                                         ₱@emp.CashAdvance.ToString("N2")
                                     </td>
-                                    <td class="px-2 py-2 text-center text-red-400 cursor-pointer hover:bg-neutral-600 border-r border-neutral-700" @onclick="() => StartEdit(emp)">
+                                    <td class="px-2 py-2 text-center text-red-400 border-r border-neutral-700">
                                         ₱@emp.ELoan.ToString("N2")
                                     </td>
                                 }
 
-                                <td class="px-2 py-2 text-center text-gray-300">₱@emp.SSSDeduction.ToString("N2")</td>
-                                <td class="px-2 py-2 text-center text-gray-300">₱@emp.PhilHealthDeduction.ToString("N2")</td>
-                                <td class="px-2 py-2 text-center text-gray-300 border-r border-neutral-700">₱@emp.PagIBIGDeduction.ToString("N2")</td>
+                                @* Government Deductions *@
+                                @if (isEditMode && emp.Status == PayrollStatus.Draft && editedPayrolls.ContainsKey(emp.UserId))
+                                {
+                                    var edited = editedPayrolls[emp.UserId];
+                                    <td class="px-1 py-2 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <input type="checkbox" class="mb-1" @bind="edited.ApplySSSDeduction" disabled="@(!emp.HasSSSDeduction)" />
+                                            <span class="text-gray-300 text-xs">₱@emp.SSSDeduction.ToString("N2")</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-1 py-2 text-center">
+                                        <div class="flex flex-col items-center">
+                                            <input type="checkbox" class="mb-1" @bind="edited.ApplyPhilHealthDeduction" disabled="@(!emp.HasPhilHealthDeduction)" />
+                                            <span class="text-gray-300 text-xs">₱@emp.PhilHealthDeduction.ToString("N2")</span>
+                                        </div>
+                                    </td>
+                                    <td class="px-1 py-2 text-center border-r border-neutral-700">
+                                        <div class="flex flex-col items-center">
+                                            <input type="checkbox" class="mb-1" @bind="edited.ApplyPagIBIGDeduction" disabled="@(!emp.HasPagIBIGDeduction)" />
+                                            <span class="text-gray-300 text-xs">₱@emp.PagIBIGDeduction.ToString("N2")</span>
+                                        </div>
+                                    </td>
+                                }
+                                else
+                                {
+                                    <td class="px-2 py-2 text-center text-gray-300">
+                                        @if (!emp.ApplySSSDeduction)
+                                        {
+                                            <span class="line-through text-gray-500">₱@emp.SSSDeduction.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>₱@emp.SSSDeduction.ToString("N2")</span>
+                                        }
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-gray-300">
+                                        @if (!emp.ApplyPhilHealthDeduction)
+                                        {
+                                            <span class="line-through text-gray-500">₱@emp.PhilHealthDeduction.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>₱@emp.PhilHealthDeduction.ToString("N2")</span>
+                                        }
+                                    </td>
+                                    <td class="px-2 py-2 text-center text-gray-300 border-r border-neutral-700">
+                                        @if (!emp.ApplyPagIBIGDeduction)
+                                        {
+                                            <span class="line-through text-gray-500">₱@emp.PagIBIGDeduction.ToString("N2")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>₱@emp.PagIBIGDeduction.ToString("N2")</span>
+                                        }
+                                    </td>
+                                }
                                 <td class="px-2 py-2 text-center text-red-400 font-semibold">₱@emp.TotalDeductions.ToString("N2")</td>
                                 <td class="px-2 py-2 text-center text-green-400 font-bold">₱@emp.NetPay.ToString("N2")</td>
                                 <td class="px-2 py-2 text-center">
-                                    @if (editingEmployee == emp.UserId)
-                                    {
-                                        <div class="flex flex-col gap-1">
-                                            <button class="bg-green-600 text-white rounded px-2 py-1 text-xs hover:bg-green-700" @onclick="SaveDeductions">
-                                                Save
-                                            </button>
-                                            <button class="bg-gray-500 text-white rounded px-2 py-1 text-xs hover:bg-gray-600" @onclick="CancelEdit">
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    }
-                                    else if (emp.Status == PayrollStatus.Draft)
+                                    @if (emp.Status == PayrollStatus.Draft && !isEditMode)
                                     {
                                         <button class="bg-blue-600 text-white rounded px-2 py-1 text-xs hover:bg-blue-700" @onclick="() => ApprovePayroll(emp.UserId)">
                                             Approve
                                         </button>
                                     }
-                                    else
+                                    else if (emp.Status == PayrollStatus.Approved)
                                     {
-                                        <span class="text-xs text-gray-500">Locked</span>
+                                        <span class="text-xs text-green-500">Approved</span>
+                                    }
+                                    else if (emp.Status == PayrollStatus.Paid)
+                                    {
+                                        <span class="text-xs text-blue-500">Paid</span>
                                     }
                                 </td>
                             </tr>
@@ -226,15 +291,18 @@ else
     private string Message = "";
     private bool IsError = false;
 
-    private Guid? editingEmployee = null;
-    private UpdateDeductionRequest editDeductions = new();
+    private bool isEditMode = false;
+    private Dictionary<Guid, UpdateDeductionRequest> editedPayrolls = new();
 
     protected override async Task OnInitializedAsync()
     {
-        if (AuthState.UserType == "Admin")
+        if (AuthState.UserType != "Admin")
         {
-            await Load();
+            Nav.NavigateTo("/login", true);
+            return;
         }
+        
+        await Load();
     }
 
     private async Task Load()
@@ -297,72 +365,87 @@ else
         }
     }
 
-    private void StartEdit(WeeklyPayrollDto emp)
+    private void StartEditAll()
     {
-        if (emp.Status != PayrollStatus.Draft)
+        if (response is null) return;
+
+        isEditMode = true;
+        editedPayrolls.Clear();
+
+        // Initialize edit data for all Draft employees
+        foreach (var emp in response.Employees.Where(e => e.Status == PayrollStatus.Draft))
         {
-            Message = "Only Draft payrolls can be edited.";
-            IsError = true;
-            return;
+            editedPayrolls[emp.UserId] = new UpdateDeductionRequest
+            {
+                Reimbursement = emp.Reimbursement,
+                HolidayPay = emp.HolidayPay,
+                SickLeavePay = emp.SickLeavePay,
+                VacationLeavePay = emp.VacationLeavePay,
+                CashAdvance = emp.CashAdvance,
+                ELoan = emp.ELoan,
+                Notes = emp.Notes,
+                // Initialize checkboxes with current deduction status
+                ApplySSSDeduction = emp.ApplySSSDeduction,
+                ApplyPhilHealthDeduction = emp.ApplyPhilHealthDeduction,
+                ApplyPagIBIGDeduction = emp.ApplyPagIBIGDeduction
+            };
         }
 
-        editingEmployee = emp.UserId;
-        editDeductions = new UpdateDeductionRequest
-        {
-            Reimbursement = emp.Reimbursement,
-            HolidayPay = emp.HolidayPay,
-            SickLeavePay = emp.SickLeavePay,
-            VacationLeavePay = emp.VacationLeavePay,
-            CashAdvance = emp.CashAdvance,
-            ELoan = emp.ELoan,
-            Notes = emp.Notes
-        };
         Message = "";
     }
 
-    private async Task SaveDeductions()
+    private async Task SaveAllDeductions()
     {
-        if (editingEmployee is null) return;
+        if (response is null || editedPayrolls.Count == 0) return;
 
         isLoading = true;
         StateHasChanged();
 
         try
         {
-            var updated = await PayrollApi.UpdateDeductionsAsync(editingEmployee.Value, WeekStart, editDeductions);
-            if (updated is not null)
+            var updateTasks = new List<Task<WeeklyPayrollDto?>>();
+            
+            foreach (var kvp in editedPayrolls)
             {
-                // Update the response with the new values
-                var emp = response?.Employees.FirstOrDefault(e => e.UserId == editingEmployee.Value);
-                if (emp is not null)
-                {
-                    emp.Reimbursement = updated.Reimbursement;
-                    emp.HolidayPay = updated.HolidayPay;
-                    emp.SickLeavePay = updated.SickLeavePay;
-                    emp.VacationLeavePay = updated.VacationLeavePay;
-                    emp.CashAdvance = updated.CashAdvance;
-                    emp.ELoan = updated.ELoan;
-                    emp.TotalDeductions = updated.TotalDeductions;
-                    emp.NetPay = updated.NetPay;
-                    emp.Notes = updated.Notes;
+                updateTasks.Add(PayrollApi.UpdateDeductionsAsync(kvp.Key, WeekStart, kvp.Value));
+            }
 
-                    // Recalculate response totals
-                    if (response is not null)
+            var results = await Task.WhenAll(updateTasks);
+
+            // Update response with new values
+            var successCount = 0;
+            foreach (var updated in results)
+            {
+                if (updated is not null)
+                {
+                    var emp = response.Employees.FirstOrDefault(e => e.UserId == updated.UserId);
+                    if (emp is not null)
                     {
-                        response.TotalDeductions = response.Employees.Sum(e => e.TotalDeductions);
-                        response.TotalNetPay = response.Employees.Sum(e => e.NetPay);
+                        emp.Reimbursement = updated.Reimbursement;
+                        emp.HolidayPay = updated.HolidayPay;
+                        emp.SickLeavePay = updated.SickLeavePay;
+                        emp.VacationLeavePay = updated.VacationLeavePay;
+                        emp.CashAdvance = updated.CashAdvance;
+                        emp.ELoan = updated.ELoan;
+                        emp.ApplySSSDeduction = updated.ApplySSSDeduction;
+                        emp.ApplyPhilHealthDeduction = updated.ApplyPhilHealthDeduction;
+                        emp.ApplyPagIBIGDeduction = updated.ApplyPagIBIGDeduction;
+                        emp.TotalDeductions = updated.TotalDeductions;
+                        emp.NetPay = updated.NetPay;
+                        emp.Notes = updated.Notes;
+                        successCount++;
                     }
                 }
+            }
 
-                Message = "Deductions updated successfully.";
-                IsError = false;
-                editingEmployee = null;
-            }
-            else
-            {
-                Message = "Failed to update deductions.";
-                IsError = true;
-            }
+            // Recalculate response totals
+            response.TotalDeductions = response.Employees.Sum(e => e.TotalDeductions);
+            response.TotalNetPay = response.Employees.Sum(e => e.NetPay);
+
+            Message = $"Successfully updated {successCount} payroll records.";
+            IsError = false;
+            isEditMode = false;
+            editedPayrolls.Clear();
         }
         catch (Exception ex)
         {
@@ -376,9 +459,10 @@ else
         }
     }
 
-    private void CancelEdit()
+    private void CancelEditAll()
     {
-        editingEmployee = null;
+        isEditMode = false;
+        editedPayrolls.Clear();
         Message = "";
     }
 
