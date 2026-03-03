@@ -9,4 +9,9 @@ public class WeeklyAttendanceDayDto
     public TimeOnly? CalculatedTimeOut { get; set; }
     public int PunchCount { get; set; }
     public bool IsIncomplete { get; set; }
+    
+    /// <summary>
+    /// List of paired punch in/out sessions for the day
+    /// </summary>
+    public List<PunchPairDto> PunchPairs { get; set; } = new();
 }

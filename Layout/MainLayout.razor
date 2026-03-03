@@ -3,25 +3,58 @@
 <div class="min-h-screen bg-neutral-300">
     <!-- Top bar -->
     <header class="h-14 bg-neutral-950 border-b flex items-center justify-between px-4">
-        <div class="text-white font-bold text-2xl">OfficeCore</div>
-
         <div class="flex items-center gap-3">
-            <button class="px-3 py-1.5 rounded-md border bg-gray-500 hover:bg-gray-400 text-white">
-                Notifications
+            <!-- Mobile menu button -->
+            <button class="lg:hidden text-white p-2 hover:bg-gray-800 rounded" @onclick="ToggleMobileMenu">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
             </button>
-            <div class="h-9 w-9 rounded-full bg-gray-200"></div>
+            <div class="text-white font-bold text-xl sm:text-2xl">OfficeCore</div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+            <button class="px-2 sm:px-3 py-1.5 rounded-md border bg-gray-500 hover:bg-gray-400 text-white text-sm sm:text-base">
+                <span class="hidden sm:inline">Notifications</span>
+                <span class="sm:hidden">🔔</span>
+            </button>
+            <div class="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-gray-200"></div>
         </div>
     </header>
 
-    <div class="flex">
+    <div class="flex relative">
+        <!-- Mobile overlay -->
+        @if (isMobileMenuOpen)
+        {
+            <div class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" @onclick="ToggleMobileMenu"></div>
+        }
+
         <!-- Sidebar -->
-        <aside class="w-64 bg-neutral-900 border-r min-h-[calc(100vh-56px)] p-3">
+        <aside class="@GetSidebarClasses()">
             <Sidebar/>
         </aside>
 
         <!-- Page content -->
-        <main class="flex-1 min-w-0 p-6 overflow-x-hidden">
+        <main class="flex-1 min-w-0 p-3 sm:p-4 md:p-6 overflow-x-hidden">
             @Body
         </main>
     </div>
 </div>
+
+@code {
+    private bool isMobileMenuOpen = false;
+
+    private void ToggleMobileMenu()
+    {
+        isMobileMenuOpen = !isMobileMenuOpen;
+    }
+
+    private string GetSidebarClasses()
+    {
+        var baseClasses = "w-64 bg-neutral-900 border-r min-h-[calc(100vh-56px)] p-3 transition-transform duration-300 ease-in-out";
+        var mobileClasses = "fixed top-14 left-0 bottom-0 z-40 lg:relative lg:top-0";
+        var transformClass = isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0";
+        
+        return $"{baseClasses} {mobileClasses} {transformClass}";
+    }
+}

@@ -11,28 +11,31 @@
 }
 else
 {
-    <div class="mt-6 max-w-7xl bg-neutral-900 border rounded-xl p-4">
-        <div class="flex flex-wrap items-end justify-between gap-3 mb-4">
+    <div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
+        <div class="flex flex-col gap-3 mb-4 flex-shrink-0">
             <div>
-                <h1 class="text-2xl text-white font-bold">Weekly Attendance</h1>
-                <p class="text-sm text-gray-200">Pick the week start date (7-day view).</p>
+                <h1 class="text-xl sm:text-2xl text-white font-bold">Weekly Attendance</h1>
+                <p class="text-xs sm:text-sm text-gray-200">Pick the week start date (7-day view).</p>
             </div>
 
-            <div class="flex items-end gap-2">
-                <button class="bg-blue-600 text-white rounded-lg py-2 px-4 hover:bg-blue-700" @onclick="OpenImportModal">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 flex-wrap">
+                <button class="bg-blue-600 text-white rounded-lg py-2 px-4 hover:bg-blue-700 text-sm sm:text-base" @onclick="OpenImportModal">
                     Import Attendance
                 </button>
-                <div>
+                <button class="bg-gray-600 text-white rounded-lg py-2 px-4 hover:bg-gray-700 text-sm sm:text-base" @onclick="@(() => Nav.NavigateTo("/admin/attendance-batches"))">
+                    View Import Batches
+                </button>
+                <div class="flex-1 sm:flex-initial">
                     <label class="block text-xs text-gray-200 mb-1">Week start</label>
-                    <input class="border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
+                    <input class="w-full border rounded-lg px-3 py-2 text-sm text-gray-200 bg-neutral-800" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
                 </div>
-                <button class="bg-black text-white border rounded-2xl p-2 px-6 py-2 hover:bg-gray-800" @onclick="Load">Load</button>
+                <button class="bg-black text-white border rounded-2xl px-6 py-2 hover:bg-gray-800 text-sm sm:text-base" @onclick="Load">Load</button>
             </div>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(Message))
         {
-            <div class="text-sm @(IsError ? "text-red-600" : "text-green-700") mb-3">@Message</div>
+            <div class="text-xs sm:text-sm @(IsError ? "text-red-600" : "text-green-700") mb-3">@Message</div>
         }
 
         @if (isLoading)
@@ -49,19 +52,19 @@ else
         }
         else
         {
-            <div class="text-sm text-gray-200 mb-2">
+            <div class="text-xs sm:text-sm text-gray-200 mb-2 flex-shrink-0">
                 Week: @response.WeekStart.ToString("yyyy-MM-dd") - @response.WeekEnd.ToString("yyyy-MM-dd")
             </div>
 
-            <div class="overflow-x-auto max-h-[525px] overflow-y-auto border border-neutral-900 rounded-lg">
-                <table class="min-w-full divide-y divide-neutral-500">
+            <div class="flex-1 overflow-auto border border-neutral-900 rounded-lg">
+                <table class="w-full divide-y divide-neutral-500 text-xs sm:text-sm">
                     <thead class="bg-neutral-900 sticky top-0 z-10">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-50 uppercase tracking-wider sticky left-0 bg-neutral-950">Employee</th>
-                            <th class="px-4 py-3 text-left text-xs font-bold text-gray-50 uppercase tracking-wider">Schedule</th>
+                            <th class="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-bold text-gray-50 uppercase tracking-wider sticky left-0 bg-neutral-950">Employee</th>
+                            <th class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-bold text-gray-50 uppercase tracking-wider">Schedule</th>
                             @foreach (var day in response.Employees[0].Days)
                             {
-                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-50 uppercase tracking-wider">
+                                <th class="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-medium text-gray-50 uppercase tracking-wider min-w-[100px] sm:min-w-0">
                                     @day.Date.ToString("MM/dd")<br />
                                     <span class="text-xs font-normal">@day.Date.ToString("ddd")</span>
                                 </th>
@@ -72,14 +75,20 @@ else
                         @foreach (var emp in response.Employees)
                         {
                             <tr class="hover:bg-neutral-800">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-50 sticky left-0 bg-neutral-700">
-                                    @emp.FirstName @emp.LastName
+                                <td class="px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs sm:text-sm text-gray-50 sticky left-0 bg-neutral-700">
+                                    <div>@emp.FirstName @emp.LastName</div>
                                     @if (emp.BiometricId is not null)
                                     {
                                         <span class="text-xs text-gray-400">(#@emp.BiometricId)</span>
                                     }
+                                    <div class="sm:hidden text-xs text-gray-300 mt-1">
+                                        @if (emp.SchedTimeIn.HasValue && emp.SchedTimeOut.HasValue)
+                                        {
+                                            <span>@emp.SchedTimeIn.Value.ToString("HH:mm")-@emp.SchedTimeOut.Value.ToString("HH:mm")</span>
+                                        }
+                                    </div>
                                 </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-200">
+                                <td class="hidden sm:table-cell px-2 sm:px-4 py-2 sm:py-3 whitespace-nowrap text-xs text-gray-200">
                                     @if (emp.SchedTimeIn.HasValue && emp.SchedTimeOut.HasValue)
                                     {
                                         <div>@emp.SchedTimeIn.Value.ToString("HH:mm") - @emp.SchedTimeOut.Value.ToString("HH:mm")</div>
@@ -95,23 +104,93 @@ else
                                 </td>
                                 @foreach (var d in emp.Days)
                                 {
-                                    <td class="px-2 py-2 text-xs">
+                                    <td class="px-1 sm:px-2 py-2 text-xs min-w-[100px] sm:min-w-0">
                                         @if (editingCell == $"{emp.UserId}_{d.Date}")
                                         {
-                                            <div class="space-y-1">
-                                                <input type="time" class="border bg-white rounded px-1 py-0.5 text-xs w-full" @bind="editTimeIn" />
-                                                <input type="time" class="border bg-white rounded px-1 py-0.5 text-xs w-full" @bind="editTimeOut" />
-                                                <div class="flex gap-1">
-                                                    <button class="bg-green-600 text-white rounded px-2 py-0.5 text-xs" @onclick="() => SaveEdit(emp.UserId, d.Date)">Save</button>
-                                                    <button class="bg-gray-400 text-white rounded px-2 py-0.5 text-xs" @onclick="CancelEdit">Cancel</button>
+                                            <div class="space-y-2 bg-neutral-700 p-2 rounded">
+                                                @for (int i = 0; i < editPunches.Count; i++)
+                                                {
+                                                    var index = i;
+                                                    <div class="flex items-center gap-1">
+                                                        <input type="time" 
+                                                               class="border bg-white text-black rounded px-1 py-0.5 text-xs flex-1" 
+                                                               value="@editPunches[index]"
+                                                               @onchange="@((ChangeEventArgs e) => UpdatePunch(index, e.Value?.ToString() ?? ""))" />
+                                                        <button class="bg-red-600 text-white rounded px-1.5 py-0.5 text-xs hover:bg-red-700" 
+                                                                @onclick="() => RemovePunch(index)"
+                                                                title="Delete punch">
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                }
+                                                <div class="flex gap-1 pt-1 border-t border-gray-500">
+                                                    <button class="bg-blue-600 text-white rounded px-2 py-0.5 text-xs hover:bg-blue-700 flex-1" 
+                                                            @onclick="AddPunch">
+                                                        + Add Punch
+                                                    </button>
+                                                </div>
+                                                <div class="flex gap-1 pt-1">
+                                                    <button class="bg-green-600 text-white rounded px-2 py-1 text-xs hover:bg-green-700 flex-1" 
+                                                            @onclick="() => SaveEdit(emp.UserId, d.Date)">
+                                                        Save
+                                                    </button>
+                                                    <button class="bg-gray-500 text-white rounded px-2 py-1 text-xs hover:bg-gray-600 flex-1" 
+                                                            @onclick="CancelEdit">
+                                                        Cancel
+                                                    </button>
                                                 </div>
                                             </div>
                                         }
                                         else
                                         {
                                             <div @onclick="() => StartEdit(emp.UserId, d)" class="cursor-pointer hover:bg-neutral-800 p-1 rounded">
-                                                @if (d.TimeIn.HasValue || d.TimeOut.HasValue)
+                                                @if (d.PunchPairs.Any())
                                                 {
+                                                    @* Display all punch pairs with hours *@
+                                                    <div class="space-y-1">
+                                                        @foreach (var pair in d.PunchPairs)
+                                                        {
+                                                            <div class="flex items-center justify-between gap-2">
+                                                                @if (pair.TimeOut.HasValue)
+                                                                {
+                                                                    <span class="font-medium text-gray-50">
+                                                                        @pair.TimeIn.ToString("HH:mm") - @pair.TimeOut.Value.ToString("HH:mm")
+                                                                    </span>
+                                                                    <span class="text-xs text-gray-300 font-semibold">
+                                                                        (@pair.Hours?.ToString("0.00")h)
+                                                                    </span>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <span class="font-medium text-orange-400">
+                                                                        @pair.TimeIn.ToString("HH:mm") - ?
+                                                                    </span>
+                                                                    <span class="text-xs text-orange-400 font-semibold">
+                                                                        (incomplete)
+                                                                    </span>
+                                                                }
+                                                            </div>
+                                                        }
+                                                        @if (d.PunchPairs.Count > 1)
+                                                        {
+                                                            var totalHours = d.PunchPairs.Where(p => p.Hours.HasValue).Sum(p => p.Hours!.Value);
+                                                            var hasIncomplete = d.PunchPairs.Any(p => !p.TimeOut.HasValue);
+                                                            <div class="pt-1 mt-1 border-t border-gray-400 flex items-center justify-between">
+                                                                <span class="text-xs text-blue-300 font-bold">Total:</span>
+                                                                <span class="text-xs text-blue-300 font-bold">
+                                                                    @totalHours.ToString("0.00")h@(hasIncomplete ? "*" : "")
+                                                                </span>
+                                                            </div>
+                                                        }
+                                                        @if (d.IsIncomplete)
+                                                        {
+                                                            <div class="text-orange-500 text-xs mt-1">⚠ Incomplete</div>
+                                                        }
+                                                    </div>
+                                                }
+                                                else if (d.TimeIn.HasValue || d.TimeOut.HasValue)
+                                                {
+                                                    @* Fallback to old format if no pairs *@
                                                     <div class="font-medium text-gray-50">
                                                         @FormatTime(d.TimeIn) - @FormatTime(d.TimeOut)
                                                     </div>
@@ -210,9 +289,18 @@ else
                             </div>
                         }
 
-                        <button class="mt-4 bg-green-600 text-white rounded-lg py-2 px-4 w-full hover:bg-green-700" @onclick="CloseImportModalAndRefresh">
-                            Close & Refresh Data
-                        </button>
+                        <div class="flex gap-2 mt-4">
+                            <button class="flex-1 bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="CloseImportModalAndRefresh">
+                                Close & Refresh Data
+                            </button>
+                            <button class="bg-red-600 text-white rounded-lg py-2 px-4 hover:bg-red-700 flex items-center gap-2" 
+                                    @onclick="() => ConfirmDeleteBatch(importResult.BatchId)">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                </svg>
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 }
                 else
@@ -266,6 +354,55 @@ else
             </div>
         </div>
     }
+
+    @* Delete Batch Confirmation Modal *@
+    @if (showDeleteConfirm)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="CancelDeleteBatch">
+            <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl" @onclick:stopPropagation="true">
+                <div class="flex items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <svg class="w-12 h-12 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4 flex-1">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Delete Attendance Batch</h3>
+                        <p class="text-sm text-gray-600">
+                            Are you sure you want to delete this import batch? This will permanently remove all attendance records from this import.
+                        </p>
+                        @if (!string.IsNullOrWhiteSpace(deleteMessage))
+                        {
+                            <div class="mt-3 p-3 rounded-lg @(deleteIsError ? "bg-red-50 text-red-800" : "bg-green-50 text-green-800")">
+                                @deleteMessage
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button 
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        @onclick="CancelDeleteBatch"
+                        disabled="@isDeleting">
+                        Cancel
+                    </button>
+                    <button 
+                        class="px-4 py-2 rounded-lg text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
+                        @onclick="ExecuteDeleteBatch"
+                        disabled="@isDeleting">
+                        @if (isDeleting)
+                        {
+                            <span>Deleting...</span>
+                        }
+                        else
+                        {
+                            <span>Delete Batch</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
 }
 
 @code {
@@ -279,8 +416,7 @@ else
 
     // Editing state
     private string? editingCell;
-    private TimeOnly? editTimeIn;
-    private TimeOnly? editTimeOut;
+    private List<string> editPunches = new(); // List of time strings (HH:mm format)
 
     // Import modal state
     private bool showImportModal;
@@ -289,6 +425,13 @@ else
     private bool isImporting;
     private string? importMessage;
     private bool importIsError;
+
+    // Delete batch state
+    private bool showDeleteConfirm;
+    private Guid batchToDeleteId;
+    private bool isDeleting;
+    private string? deleteMessage;
+    private bool deleteIsError;
 
     private async Task Load()
     {
@@ -311,15 +454,73 @@ else
     private void StartEdit(Guid userId, WeeklyAttendanceDayDto day)
     {
         editingCell = $"{userId}_{day.Date}";
-        editTimeIn = day.TimeIn;
-        editTimeOut = day.TimeOut;
+        editPunches = new List<string>();
+        
+        // Load existing punches from punch pairs
+        if (day.PunchPairs.Any())
+        {
+            foreach (var pair in day.PunchPairs)
+            {
+                editPunches.Add(pair.TimeIn.ToString("HH:mm"));
+                if (pair.TimeOut.HasValue)
+                {
+                    editPunches.Add(pair.TimeOut.Value.ToString("HH:mm"));
+                }
+            }
+        }
+        else if (day.TimeIn.HasValue || day.TimeOut.HasValue)
+        {
+            // Fallback to old format
+            if (day.TimeIn.HasValue)
+                editPunches.Add(day.TimeIn.Value.ToString("HH:mm"));
+            if (day.TimeOut.HasValue)
+                editPunches.Add(day.TimeOut.Value.ToString("HH:mm"));
+        }
+        
+        // If no punches, start with two empty ones (typical punch in/out)
+        if (!editPunches.Any())
+        {
+            editPunches.Add("08:00");
+            editPunches.Add("17:00");
+        }
     }
 
     private void CancelEdit()
     {
         editingCell = null;
-        editTimeIn = null;
-        editTimeOut = null;
+        editPunches.Clear();
+    }
+    
+    private void UpdatePunch(int index, string value)
+    {
+        if (index >= 0 && index < editPunches.Count)
+        {
+            editPunches[index] = value;
+        }
+    }
+    
+    private void AddPunch()
+    {
+        // Add a new punch with a default time
+        var lastPunch = editPunches.LastOrDefault();
+        if (lastPunch != null && TimeOnly.TryParse(lastPunch, out var lastTime))
+        {
+            // Add 1 hour to the last punch
+            var newTime = lastTime.AddHours(1);
+            editPunches.Add(newTime.ToString("HH:mm"));
+        }
+        else
+        {
+            editPunches.Add("09:00");
+        }
+    }
+    
+    private void RemovePunch(int index)
+    {
+        if (index >= 0 && index < editPunches.Count)
+        {
+            editPunches.RemoveAt(index);
+        }
     }
 
     private async Task SaveEdit(Guid userId, DateOnly workDate)
@@ -327,12 +528,21 @@ else
         if (editingCell is null)
             return;
 
+        // Parse punches from string list to TimeOnly list
+        var punches = new List<TimeOnly>();
+        foreach (var punchStr in editPunches)
+        {
+            if (!string.IsNullOrWhiteSpace(punchStr) && TimeOnly.TryParse(punchStr, out var punch))
+            {
+                punches.Add(punch);
+            }
+        }
+
         var request = new UpdateAttendanceRequest
         {
             UserId = userId,
             WorkDate = workDate,
-            TimeIn = editTimeIn,
-            TimeOut = editTimeOut
+            Punches = punches
         };
 
         var success = await AdminApi.UpdateAttendanceAsync(request);
@@ -342,6 +552,7 @@ else
             Message = "Attendance updated successfully.";
             IsError = false;
             editingCell = null;
+            editPunches.Clear();
             
             // Reload data to get updated calculated times
             await Load();
@@ -465,5 +676,66 @@ else
             return $"{timeIn} - {timeOut} (inc)";
 
         return $"{timeIn} - {timeOut}";
+    }
+
+    private void ConfirmDeleteBatch(Guid batchId)
+    {
+        batchToDeleteId = batchId;
+        showDeleteConfirm = true;
+        deleteMessage = null;
+        deleteIsError = false;
+    }
+
+    private void CancelDeleteBatch()
+    {
+        showDeleteConfirm = false;
+        batchToDeleteId = Guid.Empty;
+        deleteMessage = null;
+        deleteIsError = false;
+    }
+
+    private async Task ExecuteDeleteBatch()
+    {
+        if (batchToDeleteId == Guid.Empty)
+            return;
+
+        deleteMessage = null;
+        deleteIsError = false;
+        isDeleting = true;
+
+        try
+        {
+            var success = await AdminApi.DeleteAttendanceBatchAsync(batchToDeleteId);
+
+            if (success)
+            {
+                deleteMessage = "Batch deleted successfully.";
+                deleteIsError = false;
+                
+                // Wait a moment to show success message
+                await Task.Delay(1000);
+                
+                // Close both modals
+                CancelDeleteBatch();
+                CloseImportModal();
+                
+                // Refresh the data
+                await Load();
+            }
+            else
+            {
+                deleteMessage = "Failed to delete batch. It may have already been deleted.";
+                deleteIsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            deleteMessage = $"Error: {ex.Message}";
+            deleteIsError = true;
+        }
+        finally
+        {
+            isDeleting = false;
+        }
     }
 }

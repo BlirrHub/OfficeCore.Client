@@ -174,4 +174,46 @@ public class AdminApi
         var response = await _http.PutAsJsonAsync("api/admin/attendance/update", request);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<bool> DeleteAttendanceBatchAsync(Guid batchId)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return false;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.DeleteAsync($"api/admin/attendance/batch/{batchId}");
+        return response.IsSuccessStatusCode;
+    }
+
+    public async Task<List<AttendanceImportBatchDto>?> GetAllAttendanceBatchesAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync("api/admin/attendance/batches");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<List<AttendanceImportBatchDto>>();
+    }
+
+    public async Task<AttendanceImportBatchDto?> GetAttendanceBatchByIdAsync(Guid batchId)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync($"api/admin/attendance/batch/{batchId}");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<AttendanceImportBatchDto>();
+    }
 }
