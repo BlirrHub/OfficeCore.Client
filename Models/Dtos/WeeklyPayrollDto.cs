@@ -23,11 +23,13 @@ public class WeeklyPayrollDto
 
     // Work calculations
     public decimal TotalHours { get; set; }
+    public decimal BasicHours { get; set; }
     public decimal RegularHours { get; set; }
     public decimal OvertimeHours { get; set; }
     public decimal HourlyRate { get; set; }
     public decimal DailyRate { get; set; }
     public decimal BasicPay { get; set; }
+    public decimal LateDeduction { get; set; }
     public decimal OvertimePay { get; set; }
     public decimal GrossPay { get; set; }
 

@@ -79,18 +79,19 @@ else
                             <th rowspan="2" class="px-2 py-2 text-left text-xs font-bold text-gray-50 uppercase tracking-wider sticky left-0 bg-neutral-950 border-r border-neutral-700">Employee</th>
                             <th rowspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Status</th>
                             <th colspan="4" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Work Hours</th>
-                            <th colspan="4" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Pay</th>
+                            <th colspan="5" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Pay</th>
                             <th colspan="6" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Adjustments</th>
                             <th colspan="3" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider border-r border-neutral-700">Gov't Deductions</th>
                             <th colspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider">Totals</th>
                             <th rowspan="2" class="px-2 py-2 text-center text-xs font-bold text-gray-50 uppercase tracking-wider">Action</th>
                         </tr>
                         <tr>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Basic</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Total</th>
-                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Regular</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">OT</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50 border-r border-neutral-700">Rate/Hr</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Basic</th>
+                            <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Deduction</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">OT Pay</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50">Gross</th>
                             <th class="px-2 py-1 text-center text-xs font-medium text-gray-50 border-r border-neutral-700">Daily Rate</th>
@@ -132,11 +133,12 @@ else
                                         <span class="px-2 py-1 bg-blue-600 text-white rounded text-xs">Paid</span>
                                     }
                                 </td>
-                                <td class="px-2 py-2 text-center text-gray-200">@emp.TotalHours.ToString("F2")</td>
+                                <td class="px-2 py-2 text-center text-gray-200">@emp.BasicHours.ToString("F2")</td>
                                 <td class="px-2 py-2 text-center text-gray-200">@emp.RegularHours.ToString("F2")</td>
                                 <td class="px-2 py-2 text-center text-gray-200">@emp.OvertimeHours.ToString("F2")</td>
                                 <td class="px-2 py-2 text-center text-gray-200 border-r border-neutral-700">₱@emp.HourlyRate.ToString("N2")</td>
                                 <td class="px-2 py-2 text-center text-gray-200">₱@emp.BasicPay.ToString("N2")</td>
+                                <td class="px-2 py-2 text-center text-red-400">-₱@emp.LateDeduction.ToString("N2")</td>
                                 <td class="px-2 py-2 text-center text-gray-200">₱@emp.OvertimePay.ToString("N2")</td>
                                 <td class="px-2 py-2 text-center text-gray-200 font-semibold">₱@emp.GrossPay.ToString("N2")</td>
                                 <td class="px-2 py-2 text-center text-gray-400 text-xs border-r border-neutral-700">₱@emp.DailyRate.ToString("N2")</td>
@@ -192,19 +194,19 @@ else
                                     var edited = editedPayrolls[emp.UserId];
                                     <td class="px-1 py-2 text-center">
                                         <div class="flex flex-col items-center">
-                                            <input type="checkbox" class="mb-1" @bind="edited.ApplySSSDeduction" disabled="@(!emp.HasSSSDeduction)" />
+                                            <input type="checkbox" class="mb-1" @bind="edited.ApplySSSDeduction" />
                                             <span class="text-gray-300 text-xs">₱@emp.SSSDeduction.ToString("N2")</span>
                                         </div>
                                     </td>
                                     <td class="px-1 py-2 text-center">
                                         <div class="flex flex-col items-center">
-                                            <input type="checkbox" class="mb-1" @bind="edited.ApplyPhilHealthDeduction" disabled="@(!emp.HasPhilHealthDeduction)" />
+                                            <input type="checkbox" class="mb-1" @bind="edited.ApplyPhilHealthDeduction" />
                                             <span class="text-gray-300 text-xs">₱@emp.PhilHealthDeduction.ToString("N2")</span>
                                         </div>
                                     </td>
                                     <td class="px-1 py-2 text-center border-r border-neutral-700">
                                         <div class="flex flex-col items-center">
-                                            <input type="checkbox" class="mb-1" @bind="edited.ApplyPagIBIGDeduction" disabled="@(!emp.HasPagIBIGDeduction)" />
+                                            <input type="checkbox" class="mb-1" @bind="edited.ApplyPagIBIGDeduction" />
                                             <span class="text-gray-300 text-xs">₱@emp.PagIBIGDeduction.ToString("N2")</span>
                                         </div>
                                     </td>
@@ -268,6 +270,7 @@ else
                             <td colspan="2" class="px-2 py-2 text-right border-r border-neutral-700">TOTALS:</td>
                             <td colspan="4" class="px-2 py-2 border-r border-neutral-700"></td>
                             <td class="px-2 py-2 text-center">₱@response.TotalBasicPay.ToString("N2")</td>
+                            <td class="px-2 py-2 text-center"></td>
                             <td class="px-2 py-2 text-center">₱@response.TotalOvertimePay.ToString("N2")</td>
                             <td class="px-2 py-2 text-center">₱@response.TotalGrossPay.ToString("N2")</td>
                             <td class="px-2 py-2 border-r border-neutral-700"></td>
@@ -384,10 +387,10 @@ else
                 CashAdvance = emp.CashAdvance,
                 ELoan = emp.ELoan,
                 Notes = emp.Notes,
-                // Initialize checkboxes with current deduction status
-                ApplySSSDeduction = emp.ApplySSSDeduction,
-                ApplyPhilHealthDeduction = emp.ApplyPhilHealthDeduction,
-                ApplyPagIBIGDeduction = emp.ApplyPagIBIGDeduction
+                // Initialize checkboxes: unchecked if not configured, otherwise use current status
+                ApplySSSDeduction = emp.HasSSSDeduction && emp.ApplySSSDeduction,
+                ApplyPhilHealthDeduction = emp.HasPhilHealthDeduction && emp.ApplyPhilHealthDeduction,
+                ApplyPagIBIGDeduction = emp.HasPagIBIGDeduction && emp.ApplyPagIBIGDeduction
             };
         }
 
