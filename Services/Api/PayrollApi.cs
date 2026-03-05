@@ -81,4 +81,37 @@ public class PayrollApi
 
         return await response.Content.ReadFromJsonAsync<WeeklyPayrollDto>();
     }
+
+    public async Task<byte[]?> DownloadWeeklyPayrollExcelAsync(DateOnly weekStart)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync($"api/admin/payroll/weekly/download?weekStart={weekStart:yyyy-MM-dd}");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadAsByteArrayAsync();
+    }
+
+    public async Task<byte[]?> GeneratePayslipsPdfAsync(DateOnly weekStart, List<Guid>? employeeIds = null)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.PostAsJsonAsync(
+            $"api/admin/payroll/weekly/payslips?weekStart={weekStart:yyyy-MM-dd}", 
+            employeeIds);
+        
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadAsByteArrayAsync();
+    }
 }

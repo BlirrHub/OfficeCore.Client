@@ -23,6 +23,34 @@
         <div class="loading-progress-text"></div>
     </div>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+    <script>
+        window.downloadFile = function (fileName, base64String) {
+            const byteCharacters = atob(base64String);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            
+            // Determine MIME type based on file extension
+            let mimeType = 'application/octet-stream';
+            if (fileName.endsWith('.xlsx')) {
+                mimeType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+            } else if (fileName.endsWith('.pdf')) {
+                mimeType = 'application/pdf';
+            }
+            
+            const blob = new Blob([byteArray], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    </script>
 </body>
 
 </html>

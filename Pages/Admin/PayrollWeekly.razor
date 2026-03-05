@@ -1,5 +1,6 @@
 @page "/admin/payroll-weekly"
 @inject NavigationManager Nav
+@inject Microsoft.JSInterop.IJSRuntime JS
 @inject OfficeCore.Client.Services.State.AuthState AuthState
 @inject OfficeCore.Client.Services.Api.PayrollApi PayrollApi
 @using OfficeCore.Client.Models.Dtos
@@ -40,6 +41,35 @@ else
                 <button class="bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="GeneratePayroll">
                     Generate Payroll
                 </button>
+                @if (response is not null && response.Employees.Any())
+                {
+                    <button class="bg-blue-600 text-white rounded-lg py-2 px-4 hover:bg-blue-700 flex items-center gap-2" @onclick="DownloadExcel" disabled="@isDownloading">
+                        @if (isDownloading)
+                        {
+                            <span>Downloading...</span>
+                        }
+                        else
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <span>Download Excel</span>
+                        }
+                    </button>
+                    <button class="bg-purple-600 text-white rounded-lg py-2 px-4 hover:bg-purple-700 flex items-center gap-2" @onclick="PrintPayslips" disabled="@isPrinting">
+                        @if (isPrinting)
+                        {
+                            <span>Generating...</span>
+                        }
+                        else
+                        {
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                            </svg>
+                            <span>Print Payslips</span>
+                        }
+                    </button>
+                }
                 <div>
                     <label class="block text-xs text-gray-200 mb-1">Week start</label>
                     <input class="border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
@@ -291,6 +321,8 @@ else
     private DateOnly WeekStart = DateOnly.FromDateTime(DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek));
     private WeeklyPayrollResponse? response;
     private bool isLoading = false;
+    private bool isDownloading = false;
+    private bool isPrinting = false;
     private string Message = "";
     private bool IsError = false;
 
@@ -524,4 +556,90 @@ else
         // For now, return true
         return true;
     }
+
+    private async Task DownloadExcel()
+    {
+        if (response is null || !response.Employees.Any())
+        {
+            Message = "No payroll data to download.";
+            IsError = true;
+            return;
+        }
+
+        isDownloading = true;
+        Message = "";
+        StateHasChanged();
+
+        try
+        {
+            var excelData = await PayrollApi.DownloadWeeklyPayrollExcelAsync(WeekStart);
+            if (excelData is not null && excelData.Length > 0)
+            {
+                var fileName = $"Payroll_{WeekStart:yyyy-MM-dd}.xlsx";
+                await JS.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(excelData));
+                Message = "Excel file downloaded successfully.";
+                IsError = false;
+            }
+            else
+            {
+                Message = "Failed to download Excel file.";
+                IsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error downloading Excel: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            isDownloading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task PrintPayslips()
+    {
+        if (response is null || !response.Employees.Any())
+        {
+            Message = "No payroll data to print.";
+            IsError = true;
+            return;
+        }
+
+        isPrinting = true;
+        Message = "";
+        StateHasChanged();
+
+        try
+        {
+            // Generate payslips for all employees or selected ones
+            var employeeIds = response.Employees.Select(e => e.UserId).ToList();
+            var pdfData = await PayrollApi.GeneratePayslipsPdfAsync(WeekStart, employeeIds);
+            
+            if (pdfData is not null && pdfData.Length > 0)
+            {
+                var fileName = $"Payslips_{WeekStart:yyyy-MM-dd}.pdf";
+                await JS.InvokeVoidAsync("downloadFile", fileName, Convert.ToBase64String(pdfData));
+                Message = "Payslips PDF generated successfully.";
+                IsError = false;
+            }
+            else
+            {
+                Message = "Failed to generate payslips PDF.";
+                IsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error generating payslips: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            isPrinting = false;
+            StateHasChanged();
+        }
+    }
 }
+
