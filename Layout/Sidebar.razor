@@ -1,16 +1,20 @@
 @using Microsoft.AspNetCore.Components.Routing
 @using OfficeCore.Client.Services.State
+@using Microsoft.JSInterop
 @inject AuthState AuthState
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
 
 @if (AuthState.UserType == "Admin")
 {
     <!-- Admin Navigation -->
-    <nav class="space-y-1">
-        <NavLink href="/admin/dashboard" Match="NavLinkMatch.All"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            Dashboard
-        </NavLink>
+    <div class="flex flex-col h-full">
+        <nav class="space-y-1 flex-1">
+            <NavLink href="/admin/dashboard" Match="NavLinkMatch.All"
+                     class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                     activeClass="bg-black font-semibold">
+                Dashboard
+            </NavLink>
 
         <NavLink href="/admin/clients"
             class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
@@ -82,47 +86,66 @@
             }
         </div>
 
-        <NavLink href="/admin/settings"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            Settings
-        </NavLink>
-    </nav>
+            <NavLink href="/admin/settings"
+                     class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                     activeClass="bg-black font-semibold">
+                Settings
+            </NavLink>
+        </nav>
+
+        <!-- Logout button at bottom -->
+        <div class="mt-auto pt-4 border-t border-gray-600">
+            <button @onclick="HandleLogout" 
+                    class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-white font-semibold hover:bg-red-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
 }
 else
 {
     <!-- Employee Navigation -->
-    <nav class="space-y-1">
-        <NavLink href="/app/dashboard" Match="NavLinkMatch.All"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            Dashboard
-        </NavLink>
+    <div class="flex flex-col h-full">
+        <nav class="space-y-1 flex-1">
+            <NavLink href="/app/dashboard" Match="NavLinkMatch.All"
+                     class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                     activeClass="bg-black font-semibold">
+                Dashboard
+            </NavLink>
 
-        <NavLink href="/app/cash-advances"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            My Cash Advances
-        </NavLink>
+            <NavLink href="/app/cash-advances"
+                     class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                     activeClass="bg-black font-semibold">
+                Cash Advances
+            </NavLink>
 
-        <NavLink href="/app/liquidations"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            My Liquidations
-        </NavLink>
+            <NavLink href="/app/liquidations"
+                     class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                     activeClass="bg-black font-semibold">
+                Liquidations
+            </NavLink>
 
-        <NavLink href="/app/profile"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            Profile
-        </NavLink>
+            <NavLink href="/app/settings"
+                     class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                     activeClass="bg-black font-semibold">
+                Settings
+            </NavLink>
+        </nav>
 
-        <NavLink href="/app/settings"
-                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-                 activeClass="bg-black font-semibold">
-            Settings
-        </NavLink>
-    </nav>
+        <!-- Logout button at bottom -->
+        <div class="mt-auto pt-4 border-t border-gray-600">
+            <button @onclick="HandleLogout" 
+                    class="w-full flex items-center gap-2 px-3 py-2 rounded-md text-white font-semibold hover:bg-red-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
 }
 
 @code {
@@ -137,5 +160,12 @@ else
     private void ToggleFinance()
     {
         isFinanceExpanded = !isFinanceExpanded;
+    }
+
+    private async Task HandleLogout()
+    {
+        AuthState.Clear();
+        await AuthState.SaveAsync(JS);
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

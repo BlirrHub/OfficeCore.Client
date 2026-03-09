@@ -4,9 +4,18 @@
 @using OfficeCore.Client.Services.Api
 @inject CashAdvanceAdminApi CashAdvanceApi
 @inject PettyCashAdminApi PettyCashApi
+@implements IDisposable
 
 <div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
-    <h1 class="text-xl sm:text-2xl text-white font-bold mb-4">Cash Advance Requests</h1>
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl sm:text-2xl text-white font-bold">Cash Advance Requests</h1>
+        <div class="flex items-center gap-2 text-xs text-gray-400">
+            <svg class="w-4 h-4 animate-pulse text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+            </svg>
+            <span>Auto-refresh active</span>
+        </div>
+    </div>
 
     <div class="mb-4 flex gap-4 items-end flex-shrink-0">
         <div class="flex-1">
@@ -25,24 +34,28 @@
     <div class="bg-neutral-800 rounded-lg mb-4 flex-shrink-0">
         <div class="border-b border-neutral-700">
             <nav class="flex -mb-px">
-                <button @onclick="() => SelectTab(0)"
-                        class="@(activeTab == 0 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                <button @onclick="() => SelectTab(1)"
+                        class="@(activeTab == 1 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
                     Pending
                     @if (pendingCount > 0)
                     {
                         <span class="ml-2 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs">@pendingCount</span>
                     }
                 </button>
-                <button @onclick="() => SelectTab(1)"
-                        class="@(activeTab == 1 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                <button @onclick="() => SelectTab(2)"
+                        class="@(activeTab == 2 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
                     Approved
+                    @if (approvedCount > 0)
+                    {
+                        <span class="ml-2 bg-blue-100 text-blue-600 py-0.5 px-2 rounded-full text-xs">@approvedCount</span>
+                    }
+                </button>
+                <button @onclick="() => SelectTab(4)"
+                        class="@(activeTab == 4 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                    Claimed
                 </button>
                 <button @onclick="() => SelectTab(3)"
                         class="@(activeTab == 3 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
-                    Paid
-                </button>
-                <button @onclick="() => SelectTab(2)"
-                        class="@(activeTab == 2 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
                     Rejected
                 </button>
                 <button @onclick="() => SelectTab(-1)"
@@ -96,19 +109,19 @@
                                         @ca.Reason
                                     </td>
                                     <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
-                                        @if (ca.Status == 0)
+                                        @if (ca.Status == 1)
                                         {
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-800 text-yellow-100">
                                                 Pending
                                             </span>
                                         }
-                                        else if (ca.Status == 1)
+                                        else if (ca.Status == 2)
                                         {
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-800 text-green-100">
                                                 Approved
                                             </span>
                                         }
-                                        else if (ca.Status == 2)
+                                        else if (ca.Status == 3)
                                         {
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-800 text-red-100">
                                                 Rejected
@@ -117,7 +130,7 @@
                                         else
                                         {
                                             <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-800 text-blue-100">
-                                                Paid
+                                                Claimed
                                             </span>
                                         }
                                     </td>
@@ -169,11 +182,11 @@
                     <p class="text-gray-50">@selectedRequest.Reason</p>
                 </div>
 
-                @if (selectedRequest.Status != 0)
+                @if (selectedRequest.Status != 1)
                 {
                     <div class="mb-3">
                         <label class="block text-sm font-medium text-gray-300 mb-1">
-                            @(selectedRequest.Status == 1 ? "Approved" : "Rejected") On
+                            @(selectedRequest.Status == 2 ? "Approved" : "Rejected") On
                         </label>
                         <p class="text-gray-50">
                             @selectedRequest.ApprovedAt?.ToString("MMM dd, yyyy hh:mm tt")
@@ -181,10 +194,10 @@
                     </div>
                 }
 
-                @if (selectedRequest.Status == 3)
+                @if (selectedRequest.Status == 4)
                 {
                     <div class="mb-3 p-3 bg-green-900 rounded">
-                        <label class="block text-sm font-medium text-green-300 mb-1">Paid On</label>
+                        <label class="block text-sm font-medium text-green-300 mb-1">Claimed On</label>
                         <p class="text-green-100 font-semibold">@selectedRequest.PaidAt?.ToString("MMMM dd, yyyy hh:mm tt")</p>
                     </div>
                 }
@@ -198,7 +211,7 @@
                 }
             </div>
 
-            @if (selectedRequest.Status == 0)
+            @if (selectedRequest.Status == 1)
             {
                 <div class="mt-6 flex gap-3">
                     <button @onclick="ApproveSelected" disabled="@isSaving"
@@ -211,12 +224,12 @@
                     </button>
                 </div>
             }
-            else if (selectedRequest.Status == 1)
+            else if (selectedRequest.Status == 2)
             {
                 <div class="mt-6">
-                    <button @onclick="MarkAsPaid" disabled="@isSaving"
+                    <button @onclick="MarkAsClaimed" disabled="@isSaving"
                             class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
-                        @(isSaving ? "Processing..." : "Mark as Paid")
+                        @(isSaving ? "Processing..." : "Mark as Claimed")
                     </button>
                 </div>
             }
@@ -230,36 +243,66 @@
     private CashAdvanceDto? selectedRequest;
     private bool isLoading;
     private bool isSaving;
-    private int activeTab = 0; // 0=Pending, 1=Approved, 2=Rejected, 3=Paid, -1=All
+    private int activeTab = 1; // 1=Pending, 2=Approved, 3=Rejected, 4=Claimed, -1=All
     private int pendingCount = 0;
+    private int approvedCount = 0;
     private DateOnly? startDate;
     private DateOnly? endDate;
+    private PeriodicTimer? _refreshTimer;
+    private CancellationTokenSource? _cts;
 
     protected override async Task OnInitializedAsync()
     {
-        // Default to current month
-        var today = DateTime.Today;
-        startDate = new DateOnly(today.Year, today.Month, 1);
-        endDate = DateOnly.FromDateTime(today);
-
+        // Don't set default dates - show all requests
         await LoadRequests();
+        
+        // Start auto-refresh every 10 seconds
+        StartAutoRefresh();
+    }
+
+    private void StartAutoRefresh()
+    {
+        _cts = new CancellationTokenSource();
+        _refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (await _refreshTimer.WaitForNextTickAsync(_cts.Token))
+                {
+                    await InvokeAsync(async () =>
+                    {
+                        await LoadRequests();
+                        StateHasChanged();
+                    });
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Timer was cancelled, this is expected on dispose
+            }
+        });
+    }
+
+    public void Dispose()
+    {
+        _cts?.Cancel();
+        _refreshTimer?.Dispose();
+        _cts?.Dispose();
     }
 
     private async Task LoadRequests()
     {
         isLoading = true;
 
-        if (activeTab == 0)
-        {
-            cashAdvances = await CashAdvanceApi.GetPendingRequestsAsync();
-        }
-        else
-        {
-            var statusFilter = activeTab == -1 ? null : (int?)activeTab;
-            cashAdvances = await CashAdvanceApi.GetRequestsAsync(startDate, endDate, statusFilter);
-        }
+        // Always fetch all requests within date range to properly calculate counts
+        cashAdvances = await CashAdvanceApi.GetRequestsAsync(startDate, endDate, null);
 
-        pendingCount = cashAdvances?.Count(ca => ca.Status == 0) ?? 0;
+        // Calculate counts for all statuses
+        pendingCount = cashAdvances?.Count(ca => ca.Status == 1) ?? 0;
+        approvedCount = cashAdvances?.Count(ca => ca.Status == 2) ?? 0;
+        
         ApplyFilter();
         isLoading = false;
     }
@@ -274,11 +317,11 @@
 
         filteredRequests = activeTab switch
         {
-            0 => cashAdvances.Where(ca => ca.Status == 0).ToList(),
             1 => cashAdvances.Where(ca => ca.Status == 1).ToList(),
             2 => cashAdvances.Where(ca => ca.Status == 2).ToList(),
             3 => cashAdvances.Where(ca => ca.Status == 3).ToList(),
-            _ => cashAdvances
+            4 => cashAdvances.Where(ca => ca.Status == 4).ToList(),
+            _ => cashAdvances.ToList()
         };
     }
 
@@ -323,7 +366,7 @@
         }
     }
 
-    private async Task MarkAsPaid()
+    private async Task MarkAsClaimed()
     {
         if (selectedRequest == null) return;
 

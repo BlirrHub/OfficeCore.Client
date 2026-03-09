@@ -90,4 +90,67 @@ public class PettyCashAdminApi
 
         return await response.Content.ReadFromJsonAsync<PettyCashFundDto>();
     }
+
+    public async Task<PettyCashTransactionDetailsDto?> GetTransactionDetailsAsync(DateOnly date)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync($"api/admin/petty-cash/{date:yyyy-MM-dd}/transactions");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<PettyCashTransactionDetailsDto>();
+    }
+
+    public async Task<PettyCashFundDto?> SetOpeningBalanceAsync(DateOnly date, decimal amount, string? notes = null)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var request = new { OpeningBalance = amount, Notes = notes };
+        var response = await _http.PostAsJsonAsync($"api/admin/petty-cash/{date:yyyy-MM-dd}/set-opening", request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<PettyCashFundDto>();
+    }
+
+    public async Task<PettyCashFundDto?> AddDepositAsync(DateOnly date, decimal amount, string? notes = null)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var request = new { Amount = amount, Notes = notes };
+        var response = await _http.PostAsJsonAsync($"api/admin/petty-cash/{date:yyyy-MM-dd}/add-deposit", request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<PettyCashFundDto>();
+    }
+
+    public async Task<PettyCashFundDto?> AddWithdrawalAsync(DateOnly date, decimal amount, string? notes = null)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var request = new { Amount = amount, Notes = notes };
+        var response = await _http.PostAsJsonAsync($"api/admin/petty-cash/{date:yyyy-MM-dd}/add-withdrawal", request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<PettyCashFundDto>();
+    }
 }

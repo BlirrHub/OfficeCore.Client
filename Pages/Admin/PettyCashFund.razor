@@ -76,128 +76,191 @@
     </div>
 
     <div class="bg-neutral-800 rounded-lg p-4 mb-4 flex-shrink-0">
-        <h2 class="text-lg font-semibold text-white mb-3">View Specific Date</h2>
-        <div class="flex gap-3">
-            <input type="date" @bind="selectedDate" class="flex-1 border rounded-lg px-3 py-2 text-gray-200 bg-neutral-700" />
+        <h2 class="text-lg font-semibold text-white mb-3">Manage Fund</h2>
+        <div class="flex gap-3 flex-wrap">
+            <input type="date" @bind="selectedDate" class="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-gray-200 bg-neutral-700" />
             <button @onclick="LoadSpecificDate" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-                Load
+                Load Date
             </button>
-            <button @onclick="OpenUpdateModal" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
-                Update Fund
+            <button @onclick="OpenSetOpeningModal" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                Set Opening Balance
+            </button>
+            <button @onclick="OpenAddFundModal" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                Add Fund
+            </button>
+            <button @onclick="OpenDeductFundModal" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                Deduct Fund
             </button>
         </div>
     </div>
 
-    @if (selectedFund != null)
-    {
-        <div class="bg-neutral-800 rounded-lg p-4 mb-4 flex-shrink-0">
-            <h3 class="text-lg font-semibold text-white mb-3">
-                Fund Details - @selectedFund.Date.ToString("MMMM dd, yyyy")
-            </h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div class="p-4 bg-neutral-700 rounded">
-                    <p class="text-xs text-gray-400">Opening Balance</p>
-                    <p class="text-xl font-bold text-blue-400">₱@selectedFund.OpeningBalance.ToString("N2")</p>
-                </div>
-                <div class="p-4 bg-neutral-700 rounded">
-                    <p class="text-xs text-gray-400">Deposits</p>
-                    <p class="text-xl font-bold text-green-400">₱@selectedFund.Deposits.ToString("N2")</p>
-                </div>
-                <div class="p-4 bg-neutral-700 rounded">
-                    <p class="text-xs text-gray-400">Withdrawals</p>
-                    <p class="text-xl font-bold text-red-400">₱@selectedFund.Withdrawals.ToString("N2")</p>
-                </div>
-                <div class="p-4 bg-neutral-700 rounded">
-                    <p class="text-xs text-gray-400">Closing Balance</p>
-                    <p class="text-xl font-bold text-purple-400">₱@selectedFund.ClosingBalance.ToString("N2")</p>
-                </div>
-            </div>
-            @if (!string.IsNullOrEmpty(selectedFund.Notes))
-            {
-                <div class="mt-4 p-3 bg-neutral-700 rounded">
-                    <p class="text-sm font-medium text-gray-300">Notes:</p>
-                    <p class="text-sm text-gray-400 mt-1">@selectedFund.Notes</p>
-                </div>
-            }
-        </div>
-    }
-
     <div class="flex-1 overflow-auto bg-neutral-800 rounded-lg p-4">
         <div class="flex justify-between items-center mb-3">
-            <h2 class="text-lg font-semibold text-white">Fund History</h2>
-            <div class="flex gap-2">
-                <input type="date" @bind="historyStartDate" class="border rounded-lg px-3 py-2 text-sm text-gray-200 bg-neutral-700" />
-                <input type="date" @bind="historyEndDate" class="border rounded-lg px-3 py-2 text-sm text-gray-200 bg-neutral-700" />
-                <button @onclick="LoadHistory" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
-                    Filter
-                </button>
-            </div>
+            <h2 class="text-lg font-semibold text-white">
+                Fund History - @selectedDate.ToString("MMMM dd, yyyy")
+            </h2>
+            <button @onclick="LoadTransactionHistory" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Refresh
+            </button>
         </div>
 
         @if (isLoadingHistory)
         {
             <div class="text-center py-8">
-                <p class="text-white">Loading history...</p>
+                <p class="text-white">Loading transactions...</p>
             </div>
         }
-        else if (fundHistory == null || !fundHistory.Any())
+        else if (transactionDetails == null)
         {
             <div class="text-center py-8">
-                <p class="text-gray-400">No fund history found.</p>
+                <p class="text-gray-400">No transactions found for this date.</p>
             </div>
         }
         else
         {
-            <div class="overflow-x-auto">
-                <table class="w-full divide-y divide-neutral-500">
-                    <thead class="bg-neutral-900 sticky top-0">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Opening</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deposits</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Withdrawals</th>
-                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Closing</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-neutral-600 divide-y divide-neutral-500">
-                        @foreach (var fund in fundHistory.OrderByDescending(f => f.Date))
-                        {
-                            <tr class="hover:bg-neutral-800">
-                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-50 bg-neutral-700">
-                                    @fund.Date.ToString("MMM dd, yyyy")
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-200">
-                                    ₱@fund.OpeningBalance.ToString("N2")
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-green-400">
-                                    ₱@fund.Deposits.ToString("N2")
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-400">
-                                    ₱@fund.Withdrawals.ToString("N2")
-                                </td>
-                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-50">
-                                    ₱@fund.ClosingBalance.ToString("N2")
-                                </td>
-                                <td class="px-4 py-3 text-sm text-gray-300 max-w-xs truncate">
-                                    @(string.IsNullOrEmpty(fund.Notes) ? "-" : fund.Notes)
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+            <div class="space-y-4">
+                @if (transactionDetails.CashAdvancesPaid.Any())
+                {
+                    <div class="bg-neutral-800 rounded-lg p-4">
+                        <h5 class="text-sm font-medium text-red-400 mb-3">Cash Advances Paid</h5>
+                        <div class="bg-neutral-700 rounded-lg overflow-hidden">
+                            <table class="w-full text-sm">
+                                <thead class="bg-neutral-900">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Employee</th>
+                                        <th class="px-3 py-2 text-right text-xs text-gray-400">Amount</th>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Time</th>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Reason</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-600">
+                                    @foreach (var ca in transactionDetails.CashAdvancesPaid)
+                                    {
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-200">@ca.EmployeeName</td>
+                                            <td class="px-3 py-2 text-right font-semibold text-red-400">₱@ca.Amount.ToString("N2")</td>
+                                            <td class="px-3 py-2 text-gray-300">@ca.PaidAt.ToString("hh:mm tt")</td>
+                                            <td class="px-3 py-2 text-gray-300 max-w-xs truncate">@(string.IsNullOrEmpty(ca.Reason) ? "-" : ca.Reason)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="bg-neutral-900">
+                                    <tr>
+                                        <td class="px-3 py-2 text-xs font-bold text-gray-300">Total:</td>
+                                        <td class="px-3 py-2 text-right font-bold text-red-400">₱@transactionDetails.CashAdvancesPaid.Sum(x => x.Amount).ToString("N2")</td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @if (transactionDetails.LiquidationsIssued.Any())
+                {
+                    <div class="bg-neutral-800 rounded-lg p-4">
+                        <h5 class="text-sm font-medium text-purple-400 mb-3">Liquidations Issued</h5>
+                        <div class="bg-neutral-700 rounded-lg overflow-hidden">
+                            <table class="w-full text-sm">
+                                <thead class="bg-neutral-900">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Employee</th>
+                                        <th class="px-3 py-2 text-right text-xs text-gray-400">Issued</th>
+                                        <th class="px-3 py-2 text-right text-xs text-gray-400">Returned</th>
+                                        <th class="px-3 py-2 text-right text-xs text-gray-400">Net</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-600">
+                                    @foreach (var liq in transactionDetails.LiquidationsIssued)
+                                    {
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-200">@liq.EmployeeName</td>
+                                            <td class="px-3 py-2 text-right text-red-400">₱@liq.PettyCashReceived.ToString("N2")</td>
+                                            <td class="px-3 py-2 text-right text-green-400">₱@liq.AmountReturned.ToString("N2")</td>
+                                            <td class="px-3 py-2 text-right font-semibold @((liq.PettyCashReceived - liq.AmountReturned) > 0 ? "text-red-400" : "text-green-400")">
+                                                ₱@((liq.PettyCashReceived - liq.AmountReturned).ToString("N2"))
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @if (transactionDetails.ManualTransactions.Any())
+                {
+                    <div class="bg-neutral-800 rounded-lg p-4">
+                        <h5 class="text-sm font-medium text-blue-400 mb-3">Manual Transactions</h5>
+                        <div class="bg-neutral-700 rounded-lg overflow-hidden">
+                            <table class="w-full text-sm">
+                                <thead class="bg-neutral-900">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Type</th>
+                                        <th class="px-3 py-2 text-right text-xs text-gray-400">Amount</th>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Time</th>
+                                        <th class="px-3 py-2 text-left text-xs text-gray-400">Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-neutral-600">
+                                    @foreach (var txn in transactionDetails.ManualTransactions)
+                                    {
+                                        <tr>
+                                            <td class="px-3 py-2 text-gray-200">
+                                                <span class="px-2 py-1 rounded text-xs font-medium @(txn.Type == "Deposit" ? "bg-green-900 text-green-300" : "bg-red-900 text-red-300")">
+                                                    @txn.Type
+                                                </span>
+                                            </td>
+                                            <td class="px-3 py-2 text-right font-semibold @(txn.Type == "Deposit" ? "text-green-400" : "text-red-400")">
+                                                ₱@txn.Amount.ToString("N2")
+                                            </td>
+                                            <td class="px-3 py-2 text-gray-300">@txn.CreatedAt.ToLocalTime().ToString("hh:mm tt")</td>
+                                            <td class="px-3 py-2 text-gray-300 max-w-xs truncate">@(string.IsNullOrEmpty(txn.Notes) ? "-" : txn.Notes)</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                                <tfoot class="bg-neutral-900">
+                                    <tr>
+                                        <td class="px-3 py-2 text-xs font-bold text-gray-300">Totals:</td>
+                                        <td class="px-3 py-2 text-right">
+                                            <div class="text-xs">
+                                                <span class="text-green-400">+₱@transactionDetails.ManualTransactions.Where(t => t.Type == "Deposit").Sum(t => t.Amount).ToString("N2")</span>
+                                                <span class="text-gray-500 mx-1">|</span>
+                                                <span class="text-red-400">-₱@transactionDetails.ManualTransactions.Where(t => t.Type == "Withdrawal").Sum(t => t.Amount).ToString("N2")</span>
+                                            </div>
+                                        </td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                }
+
+                @if (!transactionDetails.CashAdvancesPaid.Any() && 
+                     !transactionDetails.LiquidationsIssued.Any() && 
+                     !transactionDetails.ManualTransactions.Any())
+                {
+                    <div class="text-center py-8">
+                        <p class="text-gray-400">No transactions for this date.</p>
+                    </div>
+                }
             </div>
         }
     </div>
 </div>
 
-@if (showUpdateModal)
+@* Set Opening Balance Modal *@
+@if (showSetOpeningModal)
 {
-    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseUpdateModal">
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseModals">
         <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-lg shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
             <div class="flex justify-between items-start mb-4">
-                <h3 class="text-lg font-bold text-white">Update Petty Cash Fund</h3>
-                <button @onclick="CloseUpdateModal" class="text-gray-400 hover:text-gray-300">
+                <h3 class="text-lg font-bold text-white">Set Opening Balance</h3>
+                <button @onclick="CloseModals" class="text-gray-400 hover:text-gray-300">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -206,35 +269,120 @@
 
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-300 mb-1">Date</label>
-                <input type="date" @bind="updateDate" class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
-            </div>
-
-
-
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-300 mb-1">Deposits</label>
-                <input type="number" step="0.01" @bind="updateRequest.Deposits"
-                       class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+                <input type="date" @bind="modalDate" class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
             </div>
 
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-300 mb-1">Withdrawals</label>
-                <input type="number" step="0.01" @bind="updateRequest.Withdrawals"
+                <label class="block text-sm font-medium text-gray-300 mb-1">Opening Balance Amount</label>
+                <input type="number" step="0.01" @bind="modalAmount"
                        class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
             </div>
 
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-300 mb-1">Notes (optional)</label>
-                <textarea @bind="updateRequest.Notes" rows="3"
-                          class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700"></textarea>
+                <textarea @bind="modalNotes" rows="3"
+                          class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700"
+                          placeholder="e.g., Initial fund setup, Adjusted opening balance..."></textarea>
             </div>
 
             <div class="flex gap-3">
-                <button @onclick="SaveUpdate" disabled="@isSaving"
-                        class="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
-                    @(isSaving ? "Saving..." : "Save")
+                <button @onclick="SaveSetOpening" disabled="@isSaving"
+                        class="flex-1 bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50">
+                    @(isSaving ? "Saving..." : "Set Opening Balance")
                 </button>
-                <button @onclick="CloseUpdateModal" disabled="@isSaving"
+                <button @onclick="CloseModals" disabled="@isSaving"
+                        class="flex-1 bg-neutral-700 text-gray-200 px-4 py-2 rounded hover:bg-neutral-600 disabled:opacity-50">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Add Fund Modal *@
+@if (showAddFundModal)
+{
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseModals">
+        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-lg shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-bold text-white">Add Fund (Deposit)</h3>
+                <button @onclick="CloseModals" class="text-gray-400 hover:text-gray-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Date</label>
+                <input type="date" @bind="modalDate" class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Amount to Add</label>
+                <input type="number" step="0.01" @bind="modalAmount"
+                       class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Notes (optional)</label>
+                <textarea @bind="modalNotes" rows="3"
+                          class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700"
+                          placeholder="e.g., Replenishment from main fund, Cash deposit..."></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button @onclick="SaveAddFund" disabled="@isSaving"
+                        class="flex-1 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50">
+                    @(isSaving ? "Saving..." : "Add Fund")
+                </button>
+                <button @onclick="CloseModals" disabled="@isSaving"
+                        class="flex-1 bg-neutral-700 text-gray-200 px-4 py-2 rounded hover:bg-neutral-600 disabled:opacity-50">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@* Deduct Fund Modal *@
+@if (showDeductFundModal)
+{
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseModals">
+        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-lg shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-bold text-white">Deduct/Withdraw Fund</h3>
+                <button @onclick="CloseModals" class="text-gray-400 hover:text-gray-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Date</label>
+                <input type="date" @bind="modalDate" class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Amount to Deduct</label>
+                <input type="number" step="0.01" @bind="modalAmount"
+                       class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Notes (optional)</label>
+                <textarea @bind="modalNotes" rows="3"
+                          class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700"
+                          placeholder="e.g., Office supplies purchase, Emergency withdrawal..."></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button @onclick="SaveDeductFund" disabled="@isSaving"
+                        class="flex-1 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 disabled:opacity-50">
+                    @(isSaving ? "Saving..." : "Deduct Fund")
+                </button>
+                <button @onclick="CloseModals" disabled="@isSaving"
                         class="flex-1 bg-neutral-700 text-gray-200 px-4 py-2 rounded hover:bg-neutral-600 disabled:opacity-50">
                     Cancel
                 </button>
@@ -246,22 +394,22 @@
 @code {
     private PettyCashFundDto? currentBalance;
     private PettyCashFundDto? selectedFund;
-    private List<PettyCashFundDto>? fundHistory;
+    private PettyCashTransactionDetailsDto? transactionDetails;
     private bool isLoadingHistory;
     private bool isSaving;
-    private bool showUpdateModal;
+    private bool showSetOpeningModal;
+    private bool showAddFundModal;
+    private bool showDeductFundModal;
 
     private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
-    private DateOnly updateDate = DateOnly.FromDateTime(DateTime.Today);
-    private DateOnly historyStartDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
-    private DateOnly historyEndDate = DateOnly.FromDateTime(DateTime.Today);
-
-    private UpdatePettyCashFundRequest updateRequest = new();
+    private DateOnly modalDate = DateOnly.FromDateTime(DateTime.Today);
+    private decimal modalAmount = 0;
+    private string? modalNotes = null;
 
     protected override async Task OnInitializedAsync()
     {
         await RefreshCurrentBalance();
-        await LoadHistory();
+        await LoadTransactionHistory();
     }
 
     private async Task RefreshCurrentBalance()
@@ -273,56 +421,96 @@
     private async Task LoadSpecificDate()
     {
         selectedFund = await PettyCashApi.GetFundAsync(selectedDate);
+        await LoadTransactionHistory();
     }
 
-    private async Task LoadHistory()
+    private async Task LoadTransactionHistory()
     {
         isLoadingHistory = true;
-        fundHistory = await PettyCashApi.GetFundHistoryAsync(historyStartDate, historyEndDate);
+        transactionDetails = await PettyCashApi.GetTransactionDetailsAsync(selectedDate);
         isLoadingHistory = false;
     }
 
-    private void OpenUpdateModal()
+    private async Task RefreshFundHistory()
     {
-        updateDate = selectedDate;
-        if (selectedFund != null)
-        {
-            updateRequest = new UpdatePettyCashFundRequest
-            {
-                Deposits = selectedFund.Deposits,
-                Withdrawals = selectedFund.Withdrawals,
-                Notes = selectedFund.Notes
-            };
-        }
-        else
-        {
-            updateRequest = new UpdatePettyCashFundRequest
-            {
-                Deposits = 0,
-                Withdrawals = 0,
-                Notes = null
-            };
-        }
-        showUpdateModal = true;
+        await LoadTransactionHistory();
     }
 
-    private async Task SaveUpdate()
+    private void OpenSetOpeningModal()
+    {
+        modalDate = selectedDate;
+        modalAmount = selectedFund?.OpeningBalance ?? 0;
+        modalNotes = null;
+        showSetOpeningModal = true;
+    }
+
+    private void OpenAddFundModal()
+    {
+        modalDate = selectedDate;
+        modalAmount = 0;
+        modalNotes = null;
+        showAddFundModal = true;
+    }
+
+    private void OpenDeductFundModal()
+    {
+        modalDate = selectedDate;
+        modalAmount = 0;
+        modalNotes = null;
+        showDeductFundModal = true;
+    }
+
+    private async Task SaveSetOpening()
     {
         isSaving = true;
-        var result = await PettyCashApi.UpdateFundAsync(updateDate, updateRequest);
+        var result = await PettyCashApi.SetOpeningBalanceAsync(modalDate, modalAmount, modalNotes);
         isSaving = false;
 
         if (result != null)
         {
             selectedFund = result;
             await RefreshCurrentBalance();
-            await LoadHistory();
-            CloseUpdateModal();
+            await LoadTransactionHistory();
+            CloseModals();
         }
     }
 
-    private void CloseUpdateModal()
+    private async Task SaveAddFund()
     {
-        showUpdateModal = false;
+        isSaving = true;
+        var result = await PettyCashApi.AddDepositAsync(modalDate, modalAmount, modalNotes);
+        isSaving = false;
+
+        if (result != null)
+        {
+            selectedFund = result;
+            await RefreshCurrentBalance();
+            await LoadTransactionHistory();
+            CloseModals();
+        }
+    }
+
+    private async Task SaveDeductFund()
+    {
+        isSaving = true;
+        var result = await PettyCashApi.AddWithdrawalAsync(modalDate, modalAmount, modalNotes);
+        isSaving = false;
+
+        if (result != null)
+        {
+            selectedFund = result;
+            await RefreshCurrentBalance();
+            await LoadTransactionHistory();
+            CloseModals();
+        }
+    }
+
+    private void CloseModals()
+    {
+        showSetOpeningModal = false;
+        showAddFundModal = false;
+        showDeductFundModal = false;
+        modalAmount = 0;
+        modalNotes = null;
     }
 }

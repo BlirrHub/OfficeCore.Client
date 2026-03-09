@@ -4,66 +4,69 @@
 @using OfficeCore.Client.Services.Api
 @inject CashAdvanceApi CashAdvanceApi
 
-<div class="p-6">
-    <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">My Cash Advances</h1>
-        <button @onclick="OpenRequestModal" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            + Request Cash Advance
+<div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col overflow-auto">
+    <div class="flex justify-between items-center mb-4 flex-shrink-0">
+        <div>
+            <h1 class="text-xl sm:text-2xl text-white font-bold">Cash Advances</h1>
+            <p class="text-gray-400 text-xs sm:text-sm mt-1">Request and track your cash advances</p>
+        </div>
+        <button @onclick="OpenRequestModal" class="bg-black text-white border rounded-2xl px-4 sm:px-6 py-2 hover:bg-gray-800 whitespace-nowrap">
+            + Request
         </button>
     </div>
 
-    <div class="mb-6 flex gap-4 items-end">
+    <div class="mb-4 flex gap-4 items-end flex-shrink-0">
         <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <input type="date" @bind="startDate" class="w-full border border-gray-300 rounded px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-400 mb-1">Start Date</label>
+            <input type="date" @bind="startDate" class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         </div>
         <div class="flex-1">
-            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <input type="date" @bind="endDate" class="w-full border border-gray-300 rounded px-3 py-2" />
+            <label class="block text-sm font-medium text-gray-400 mb-1">End Date</label>
+            <input type="date" @bind="endDate" class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
         </div>
-        <button @onclick="LoadRequests" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+        <button @onclick="LoadRequests" class="bg-black text-white border rounded-2xl px-6 py-2 hover:bg-gray-800 whitespace-nowrap">
             Filter
         </button>
     </div>
 
     @if (isLoading)
     {
-        <div class="text-center py-8">
-            <p class="text-gray-500">Loading your cash advance requests...</p>
+        <div class="text-center py-8 flex-1 flex items-center justify-center">
+            <p class="text-gray-400">Loading your cash advance requests...</p>
         </div>
     }
     else if (cashAdvances == null || !cashAdvances.Any())
     {
-        <div class="bg-white rounded-lg shadow p-8 text-center">
-            <p class="text-gray-500">You haven't made any cash advance requests yet.</p>
-            <button @onclick="OpenRequestModal" class="mt-4 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+        <div class="bg-neutral-800 border border-neutral-700 rounded-lg p-8 text-center flex-1 flex flex-col items-center justify-center">
+            <p class="text-gray-400 mb-4">You haven't made any cash advance requests yet.</p>
+            <button @onclick="OpenRequestModal" class="bg-black text-white border rounded-2xl px-6 py-2 hover:bg-gray-800">
                 Request Your First Cash Advance
             </button>
         </div>
     }
     else
     {
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto">
             @foreach (var ca in cashAdvances.OrderByDescending(c => c.CreatedAt))
             {
-                <div class="bg-white rounded-lg shadow p-5 hover:shadow-lg transition-shadow">
+                <div class="bg-neutral-800 border border-neutral-700 rounded-lg p-5 hover:bg-neutral-750 transition-colors">
                     <div class="flex justify-between items-start mb-3">
-                        <div class="text-3xl font-bold text-blue-700">
+                        <div class="text-3xl font-bold text-blue-400">
                             ₱@ca.Amount.ToString("N2")
                         </div>
-                        @if (ca.Status == 0)
+                        @if (ca.Status == 1)
                         {
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                 Pending
                             </span>
                         }
-                        else if (ca.Status == 1)
+                        else if (ca.Status == 2)
                         {
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                 Approved
                             </span>
                         }
-                        else if (ca.Status == 2)
+                        else if (ca.Status == 3)
                         {
                             <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
                                 Rejected
@@ -77,37 +80,37 @@
                         }
                     </div>
 
-                    <p class="text-sm text-gray-600 mb-2">
-                        <strong>Requested:</strong> @ca.CreatedAt.ToString("MMM dd, yyyy")
+                    <p class="text-sm text-gray-400 mb-2">
+                        <strong class="text-gray-300">Requested:</strong> @ca.CreatedAt.ToString("MMM dd, yyyy")
                     </p>
                     
-                    <p class="text-sm text-gray-700 mb-3 line-clamp-2">
+                    <p class="text-sm text-gray-300 mb-3 line-clamp-2">
                         @ca.Reason
                     </p>
 
-                    @if (ca.Status == 1 || ca.Status == 3)
+                    @if (ca.Status == 2 || ca.Status == 4)
                     {
-                        <p class="text-xs text-green-600 mb-1">
+                        <p class="text-xs text-green-400 mb-1">
                             Approved on @ca.ApprovedAt?.ToString("MMM dd, yyyy")
                         </p>
                     }
 
-                    @if (ca.Status == 3 && ca.PaidAt.HasValue)
+                    @if (ca.Status == 4 && ca.PaidAt.HasValue)
                     {
-                        <p class="text-xs text-blue-600 mb-1">
+                        <p class="text-xs text-blue-400 mb-1">
                             Paid on @ca.PaidAt.Value.ToString("MMM dd, yyyy")
                         </p>
                     }
 
                     @if (ca.PayrollWeekStart.HasValue)
                     {
-                        <p class="text-xs text-purple-600">
+                        <p class="text-xs text-purple-400">
                             Deducted from payroll (Week of @ca.PayrollWeekStart.Value.ToString("MMM dd"))
                         </p>
                     }
 
                     <button @onclick="() => ViewDetails(ca.Id)"
-                            class="mt-3 w-full bg-gray-100 text-gray-700 px-3 py-2 rounded hover:bg-gray-200 text-sm">
+                            class="mt-3 w-full bg-neutral-700 border border-neutral-600 text-white px-3 py-2 rounded hover:bg-neutral-600 text-sm">
                         View Details
                     </button>
                 </div>
@@ -118,11 +121,11 @@
 
 @if (showRequestModal)
 {
-    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseRequestModal">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white" @onclick:stopPropagation="true">
+    <div class="fixed inset-0 bg-black bg-opacity-70 overflow-y-auto h-full w-full z-50" @onclick="CloseRequestModal">
+        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-lg shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
             <div class="flex justify-between items-start mb-4">
-                <h3 class="text-lg font-bold text-gray-900">Request Cash Advance</h3>
-                <button @onclick="CloseRequestModal" class="text-gray-400 hover:text-gray-500">
+                <h3 class="text-lg font-bold text-white">Request Cash Advance</h3>
+                <button @onclick="CloseRequestModal" class="text-gray-400 hover:text-gray-300">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -130,39 +133,39 @@
             </div>
 
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Amount (₱100 - ₱1,000) <span class="text-red-500">*</span>
+                <label class="block text-sm font-medium text-gray-300 mb-1">
+                    Amount (₱100 - ₱1,000) <span class="text-red-400">*</span>
                 </label>
                 <input type="number" step="0.01" min="100" max="1000"
                        @bind="newRequest.Amount"
-                       class="w-full border border-gray-300 rounded px-3 py-2"
+                       class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                        placeholder="Enter amount" />
                 @if (!string.IsNullOrEmpty(amountError))
                 {
-                    <p class="mt-1 text-sm text-red-600">@amountError</p>
+                    <p class="mt-1 text-sm text-red-400">@amountError</p>
                 }
             </div>
 
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">
-                    Reason (minimum 10 characters) <span class="text-red-500">*</span>
+                <label class="block text-sm font-medium text-gray-300 mb-1">
+                    Reason (optional)
                 </label>
                 <textarea @bind="newRequest.Reason" rows="4"
-                          class="w-full border border-gray-300 rounded px-3 py-2"
-                          placeholder="Explain why you need this cash advance"></textarea>
+                          class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          placeholder="Explain why you need this cash advance (optional)"></textarea>
                 @if (!string.IsNullOrEmpty(reasonError))
                 {
-                    <p class="mt-1 text-sm text-red-600">@reasonError</p>
+                    <p class="mt-1 text-sm text-red-400">@reasonError</p>
                 }
             </div>
 
             <div class="flex gap-3">
                 <button @onclick="SubmitRequest" disabled="@isSaving"
-                        class="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+                        class="flex-1 bg-black text-white border rounded-2xl px-4 py-2 hover:bg-gray-800 disabled:opacity-50">
                     @(isSaving ? "Submitting..." : "Submit Request")
                 </button>
                 <button @onclick="CloseRequestModal" disabled="@isSaving"
-                        class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 disabled:opacity-50">
+                        class="flex-1 bg-neutral-700 border border-neutral-600 text-white px-4 py-2 rounded-2xl hover:bg-neutral-600 disabled:opacity-50">
                     Cancel
                 </button>
             </div>
@@ -172,11 +175,11 @@
 
 @if (selectedRequest != null)
 {
-    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseDetailsModal">
-        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white" @onclick:stopPropagation="true">
+    <div class="fixed inset-0 bg-black bg-opacity-70 overflow-y-auto h-full w-full z-50" @onclick="CloseDetailsModal">
+        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-2xl shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
             <div class="flex justify-between items-start mb-4">
-                <h3 class="text-lg font-bold text-gray-900">Cash Advance Details</h3>
-                <button @onclick="CloseDetailsModal" class="text-gray-400 hover:text-gray-500">
+                <h3 class="text-lg font-bold text-white">Cash Advance Details</h3>
+                <button @onclick="CloseDetailsModal" class="text-gray-400 hover:text-gray-300">
                     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -184,26 +187,26 @@
             </div>
 
             <div class="mb-4">
-                <div class="p-4 bg-blue-50 rounded mb-4">
-                    <p class="text-sm text-gray-600">Amount</p>
-                    <p class="text-3xl font-bold text-blue-700">₱@selectedRequest.Amount.ToString("N2")</p>
+                <div class="p-4 bg-neutral-700 border border-neutral-600 rounded mb-4">
+                    <p class="text-sm text-gray-400">Amount</p>
+                    <p class="text-3xl font-bold text-blue-400">₱@selectedRequest.Amount.ToString("N2")</p>
                 </div>
 
                 <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    @if (selectedRequest.Status == 0)
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                    @if (selectedRequest.Status == 1)
                     {
                         <span class="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
                             Pending Approval
                         </span>
                     }
-                    else if (selectedRequest.Status == 1)
+                    else if (selectedRequest.Status == 2)
                     {
                         <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
                             Approved
                         </span>
                     }
-                    else if (selectedRequest.Status == 2)
+                    else if (selectedRequest.Status == 3)
                     {
                         <span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">
                             Rejected
@@ -218,40 +221,40 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Request Date</label>
-                    <p class="text-gray-900">@selectedRequest.CreatedAt.ToString("MMMM dd, yyyy hh:mm tt")</p>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Request Date</label>
+                    <p class="text-white">@selectedRequest.CreatedAt.ToString("MMMM dd, yyyy hh:mm tt")</p>
                 </div>
 
                 <div class="mb-3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Reason</label>
-                    <p class="text-gray-900">@selectedRequest.Reason</p>
+                    <label class="block text-sm font-medium text-gray-400 mb-1">Reason</label>
+                    <p class="text-white">@selectedRequest.Reason</p>
                 </div>
 
-                @if (selectedRequest.Status != 0)
+                @if (selectedRequest.Status != 1)
                 {
-                    <div class="mb-3 p-3 @(selectedRequest.Status == 1 || selectedRequest.Status == 3 ? "bg-green-50" : "bg-red-50") rounded">
-                        <label class="block text-sm font-medium @(selectedRequest.Status == 1 || selectedRequest.Status == 3 ? "text-green-700" : "text-red-700") mb-1">
-                            @(selectedRequest.Status == 1 || selectedRequest.Status == 3 ? "Approved" : "Rejected") On
+                    <div class="mb-3 p-3 @(selectedRequest.Status == 2 || selectedRequest.Status == 4 ? "bg-green-900 bg-opacity-30 border border-green-700" : "bg-red-900 bg-opacity-30 border border-red-700") rounded">
+                        <label class="block text-sm font-medium @(selectedRequest.Status == 2 || selectedRequest.Status == 4 ? "text-green-400" : "text-red-400") mb-1">
+                            @(selectedRequest.Status == 2 || selectedRequest.Status == 4 ? "Approved" : "Rejected") On
                         </label>
-                        <p class="@(selectedRequest.Status == 1 || selectedRequest.Status == 3 ? "text-green-900" : "text-red-900")">
+                        <p class="@(selectedRequest.Status == 2 || selectedRequest.Status == 4 ? "text-green-300" : "text-red-300")">
                             @selectedRequest.ApprovedAt?.ToString("MMMM dd, yyyy hh:mm tt")
                         </p>
                     </div>
                 }
 
-                @if (selectedRequest.Status == 3 && selectedRequest.PaidAt.HasValue)
+                @if (selectedRequest.Status == 4 && selectedRequest.PaidAt.HasValue)
                 {
-                    <div class="mb-3 p-3 bg-blue-50 rounded">
-                        <label class="block text-sm font-medium text-blue-700 mb-1">Paid On</label>
-                        <p class="text-blue-900 font-semibold">@selectedRequest.PaidAt.Value.ToString("MMMM dd, yyyy hh:mm tt")</p>
+                    <div class="mb-3 p-3 bg-blue-900 bg-opacity-30 border border-blue-700 rounded">
+                        <label class="block text-sm font-medium text-blue-400 mb-1">Paid On</label>
+                        <p class="text-blue-300 font-semibold">@selectedRequest.PaidAt.Value.ToString("MMMM dd, yyyy hh:mm tt")</p>
                     </div>
                 }
 
                 @if (selectedRequest.PayrollWeekStart.HasValue)
                 {
-                    <div class="mb-3 p-3 bg-purple-50 rounded">
-                        <label class="block text-sm font-medium text-purple-700 mb-1">Payroll Deduction</label>
-                        <p class="text-purple-900">
+                    <div class="mb-3 p-3 bg-purple-900 bg-opacity-30 border border-purple-700 rounded">
+                        <label class="block text-sm font-medium text-purple-400 mb-1">Payroll Deduction</label>
+                        <p class="text-purple-300">
                             This amount was deducted from your payroll for the week starting 
                             <strong>@selectedRequest.PayrollWeekStart.Value.ToString("MMMM dd, yyyy")</strong>
                         </p>
@@ -289,7 +292,10 @@
 
     private void OpenRequestModal()
     {
-        newRequest = new CreateCashAdvanceRequest();
+        newRequest = new CreateCashAdvanceRequest
+        {
+            RequestDate = DateOnly.FromDateTime(DateTime.Today)
+        };
         amountError = null;
         reasonError = null;
         showRequestModal = true;
@@ -307,10 +313,10 @@
             return;
         }
 
-        // Validate reason
-        if (string.IsNullOrWhiteSpace(newRequest.Reason) || newRequest.Reason.Length < 10)
+        // Validate reason (optional but if provided must be meaningful)
+        if (!string.IsNullOrWhiteSpace(newRequest.Reason) && newRequest.Reason.Trim().Length < 3)
         {
-            reasonError = "Reason must be at least 10 characters";
+            reasonError = "Reason must be at least 3 characters if provided";
             return;
         }
 
