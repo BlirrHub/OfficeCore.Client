@@ -204,4 +204,120 @@ public class SettingsApi
             return false;
         }
     }
+
+    // ===== CLIENTS =====
+    
+    public async Task<List<ClientDto>> GetClientsAsync()
+    {
+        try
+        {
+            SetAuthHeader();
+            var result = await _http.GetFromJsonAsync<List<ClientDto>>("api/settings/clients");
+            return result ?? new List<ClientDto>();
+        }
+        catch
+        {
+            return new List<ClientDto>();
+        }
+    }
+
+    public async Task<bool> CreateClientAsync(CreateClientRequest request)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _http.PostAsJsonAsync("api/settings/clients", request);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateClientAsync(Guid id, UpdateClientRequest request)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _http.PutAsJsonAsync($"api/settings/clients/{id}", request);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteClientAsync(Guid id)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _http.DeleteAsync($"api/settings/clients/{id}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // ===== BUSINESSES =====
+    
+    public async Task<List<BusinessDto>> GetBusinessesAsync()
+    {
+        try
+        {
+            SetAuthHeader();
+            var result = await _http.GetFromJsonAsync<List<BusinessDto>>("api/settings/businesses");
+            return result ?? new List<BusinessDto>();
+        }
+        catch
+        {
+            return new List<BusinessDto>();
+        }
+    }
+
+    public async Task<bool> CreateBusinessAsync(CreateBusinessRequest request)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _http.PostAsJsonAsync("api/settings/businesses", request);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateBusinessAsync(Guid id, UpdateBusinessRequest request)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _http.PutAsJsonAsync($"api/settings/businesses/{id}", request);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public async Task<bool> DeleteBusinessAsync(Guid id)
+    {
+        try
+        {
+            SetAuthHeader();
+            var response = await _http.DeleteAsync($"api/settings/businesses/{id}");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

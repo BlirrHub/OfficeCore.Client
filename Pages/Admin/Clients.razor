@@ -1,0 +1,438 @@
+@page "/admin/clients"
+@inject NavigationManager Nav
+@inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject OfficeCore.Client.Services.Api.SettingsApi SettingsApi
+@inject IJSRuntime JSRuntime
+@using OfficeCore.Client.Models.Dtos
+
+@if (AuthState.UserType != "Admin")
+{
+    <p class="mt-2 text-red-600">Not authorized.</p>
+}
+else
+{
+    <div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 flex-shrink-0">
+            <h1 class="text-xl sm:text-2xl text-white font-bold">Clients</h1>
+            <button class="w-full sm:w-auto bg-black text-white border rounded-2xl px-4 sm:px-6 py-2 hover:bg-gray-800" 
+                    @onclick="ShowCreateClient">
+                Create Client
+            </button>
+        </div>
+
+        @if (isLoading)
+        {
+            <p class="text-white">Loading clients...</p>
+        }
+        else if (clients == null || !clients.Any())
+        {
+            <p class="text-gray-500">No clients found.</p>
+        }
+        else
+        {
+            <div class="flex-1 overflow-auto border border-neutral-900 rounded-lg">
+                <div class="inline-block w-full align-middle">
+                    <table class="w-full divide-y divide-neutral-500">
+                        <thead class="bg-neutral-900 sticky top-0 z-10">
+                            <tr>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider bg-neutral-950">
+                                    Name
+                                </th>
+                                <th class="hidden md:table-cell px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                    Contact Number
+                                </th>
+                                <th class="hidden lg:table-cell px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th class="hidden sm:table-cell px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">
+                                    Businesses
+                                </th>
+                                <th class="px-3 sm:px-6 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-neutral-600 divide-y divide-neutral-500">
+                            @foreach (var client in clients)
+                            {
+                                <tr class="hover:bg-neutral-800">
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-50 bg-neutral-700">
+                                        <div>@client.FirstName @client.LastName</div>
+                                        <div class="md:hidden text-xs text-gray-300 mt-1">@client.ContactNumber</div>
+                                    </td>
+                                    <td class="hidden md:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-200">
+                                        @client.ContactNumber
+                                    </td>
+                                    <td class="hidden lg:table-cell px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm">
+                                        @if (client.Status == "Active")
+                                        {
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                                Active
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                                Inactive
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="hidden sm:table-cell px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm text-gray-200">
+                                        @if (client.Businesses.Any())
+                                        {
+                                            <div class="space-y-1">
+                                                @foreach (var business in client.Businesses)
+                                                {
+                                                    <div>• @business.Name</div>
+                                                }
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400">No businesses</span>
+                                        }
+                                    </td>
+                                    <td class="px-2 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-right">
+                                        <div class="flex flex-col sm:flex-row justify-end gap-1 sm:gap-2">
+                                            <button 
+                                                class="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 border border-gray-300 rounded-md text-xs sm:text-sm font-medium text-white bg-neutral-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" 
+                                                @onclick="@(() => OpenEditClient(client))">
+                                                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                                </svg>
+                                                <span class="hidden sm:inline">Edit</span>
+                                            </button>
+                                            <button 
+                                                class="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 border border-red-300 rounded-md text-xs sm:text-sm font-medium text-red-700 bg-neutral-800 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500" 
+                                                @onclick="@(() => DeleteClient(client.Id))">
+                                                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                                <span class="hidden sm:inline">Delete</span>
+                                            </button>
+                                            <button 
+                                                class="inline-flex items-center justify-center px-2 sm:px-3 py-1.5 border border-purple-300 rounded-md text-xs sm:text-sm font-medium text-purple-700 bg-neutral-800 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500" 
+                                                @onclick="@(() => ShowBusinessModal(client.Id))">
+                                                <svg class="w-3 h-3 sm:w-4 sm:h-4 sm:mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                                <span class="hidden sm:inline">Business</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    @if (showCreateModal || showEditModal)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="CloseClientModal">
+            <div class="bg-neutral-800 rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" @onclick:stopPropagation>
+                <h2 class="text-xl font-bold text-white mb-4">@(showEditModal ? "Edit Client" : "Create Client")</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">First Name</label>
+                        <input @bind-value="currentClient.FirstName" 
+                               @bind-value:event="oninput"
+                               class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Last Name</label>
+                        <input @bind-value="currentClient.LastName" 
+                               @bind-value:event="oninput"
+                               class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
+                        <input @bind-value="newBusinessName" 
+                               @bind-value:event="oninput"
+                               class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                        <textarea @bind-value="newBusinessAddress" 
+                                  @bind-value:event="oninput"
+                                  rows="2"
+                                  class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Contact Number</label>
+                        <input @bind-value="currentClient.ContactNumber" 
+                               @bind-value:event="oninput"
+                               class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                        <select @bind="currentClient.Status" 
+                                class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white">
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-6">
+                    <button @onclick="SaveClient" 
+                            class="flex-1 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 border border-neutral-600">
+                        Save
+                    </button>
+                    <button @onclick="CloseClientModal" 
+                            class="flex-1 border border-neutral-600 px-4 py-2 rounded-lg hover:bg-neutral-700 text-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (showBusinessModal)
+    {
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @onclick="CloseBusinessModal">
+            <div class="bg-neutral-800 rounded-lg p-6 w-full max-w-md mx-4" @onclick:stopPropagation>
+                <h2 class="text-xl font-bold text-white mb-4">Add Business</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
+                        <input @bind-value="newBusinessName" 
+                               @bind-value:event="oninput"
+                               class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white" />
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                        <textarea @bind-value="newBusinessAddress" 
+                                  @bind-value:event="oninput"
+                                  rows="3"
+                                  class="w-full bg-neutral-700 border border-neutral-600 rounded px-3 py-2 text-white"></textarea>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2 mt-6">
+                    <button @onclick="SaveBusiness" 
+                            class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+                        Add
+                    </button>
+                    <button @onclick="CloseBusinessModal" 
+                            class="flex-1 border border-neutral-600 px-4 py-2 rounded-lg hover:bg-neutral-700 text-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    private List<ClientDto> clients = new();
+    private bool isLoading = false;
+    
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
+    private bool showBusinessModal = false;
+    
+    private ClientDto currentClient = new();
+    private Guid? editingClientId = null;
+    
+    private Guid? selectedClientIdForBusiness = null;
+    private string newBusinessName = string.Empty;
+    private string newBusinessAddress = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadClients();
+    }
+
+    private async Task LoadClients()
+    {
+        isLoading = true;
+        clients = await SettingsApi.GetClientsAsync();
+        isLoading = false;
+    }
+
+    private void ShowCreateClient()
+    {
+        currentClient = new ClientDto { Status = "Active" };
+        editingClientId = null;
+        newBusinessName = string.Empty;
+        newBusinessAddress = string.Empty;
+        showCreateModal = true;
+    }
+
+    private void OpenEditClient(ClientDto client)
+    {
+        currentClient = new ClientDto
+        {
+            FirstName = client.FirstName,
+            LastName = client.LastName,
+            ContactNumber = client.ContactNumber,
+            Status = client.Status
+        };
+        editingClientId = client.Id;
+        
+        // Load first business if exists
+        if (client.Businesses.Any())
+        {
+            var firstBusiness = client.Businesses.First();
+            newBusinessName = firstBusiness.Name;
+            newBusinessAddress = firstBusiness.Address;
+        }
+        else
+        {
+            newBusinessName = string.Empty;
+            newBusinessAddress = string.Empty;
+        }
+        
+        showEditModal = true;
+    }
+
+    private void CloseClientModal()
+    {
+        showCreateModal = false;
+        showEditModal = false;
+        currentClient = new();
+        editingClientId = null;
+        newBusinessName = string.Empty;
+        newBusinessAddress = string.Empty;
+    }
+
+    private async Task SaveClient()
+    {
+        if (string.IsNullOrWhiteSpace(currentClient.FirstName) || string.IsNullOrWhiteSpace(currentClient.LastName))
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "First name and last name are required.");
+            return;
+        }
+
+        bool success;
+        Guid? clientId = null;
+        
+        if (showEditModal && editingClientId.HasValue)
+        {
+            success = await SettingsApi.UpdateClientAsync(editingClientId.Value, new UpdateClientRequest
+            {
+                FirstName = currentClient.FirstName,
+                LastName = currentClient.LastName,
+                ContactNumber = currentClient.ContactNumber,
+                Status = currentClient.Status
+            });
+            clientId = editingClientId.Value;
+        }
+        else
+        {
+            success = await SettingsApi.CreateClientAsync(new CreateClientRequest
+            {
+                FirstName = currentClient.FirstName,
+                LastName = currentClient.LastName,
+                ContactNumber = currentClient.ContactNumber,
+                Status = currentClient.Status
+            });
+            
+            // Get the newly created client ID
+            if (success)
+            {
+                await LoadClients();
+                var newClient = clients.FirstOrDefault(c => 
+                    c.FirstName == currentClient.FirstName && 
+                    c.LastName == currentClient.LastName &&
+                    c.ContactNumber == currentClient.ContactNumber);
+                clientId = newClient?.Id;
+            }
+        }
+
+        // Create or update business if provided
+        if (success && clientId.HasValue && !string.IsNullOrWhiteSpace(newBusinessName))
+        {
+            var businessSuccess = await SettingsApi.CreateBusinessAsync(new CreateBusinessRequest
+            {
+                Name = newBusinessName,
+                Address = newBusinessAddress,
+                ClientId = clientId.Value
+            });
+            
+            if (!businessSuccess)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Client saved but failed to save business.");
+            }
+        }
+
+        if (success)
+        {
+            await LoadClients();
+            CloseClientModal();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to save client.");
+        }
+    }
+
+    private async Task DeleteClient(Guid id)
+    {
+        if (!await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to delete this client and all their businesses?"))
+            return;
+
+        var success = await SettingsApi.DeleteClientAsync(id);
+        if (success)
+        {
+            await LoadClients();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to delete client.");
+        }
+    }
+
+    private void ShowBusinessModal(Guid clientId)
+    {
+        selectedClientIdForBusiness = clientId;
+        newBusinessName = string.Empty;
+        newBusinessAddress = string.Empty;
+        showBusinessModal = true;
+    }
+
+    private void CloseBusinessModal()
+    {
+        showBusinessModal = false;
+        selectedClientIdForBusiness = null;
+        newBusinessName = string.Empty;
+        newBusinessAddress = string.Empty;
+    }
+
+    private async Task SaveBusiness()
+    {
+        if (string.IsNullOrWhiteSpace(newBusinessName) || !selectedClientIdForBusiness.HasValue)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Business name is required.");
+            return;
+        }
+
+        var success = await SettingsApi.CreateBusinessAsync(new CreateBusinessRequest
+        {
+            Name = newBusinessName,
+            Address = newBusinessAddress,
+            ClientId = selectedClientIdForBusiness.Value
+        });
+
+        if (success)
+        {
+            await LoadClients();
+            CloseBusinessModal();
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "Failed to add business.");
+        }
+    }
+}
