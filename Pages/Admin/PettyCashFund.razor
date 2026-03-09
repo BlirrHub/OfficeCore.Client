@@ -1,0 +1,328 @@
+@page "/admin/petty-cash"
+@attribute [Authorize(Roles = "Admin")]
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Services.Api
+@inject PettyCashAdminApi PettyCashApi
+
+<div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
+    <h1 class="text-xl sm:text-2xl text-white font-bold mb-4">Petty Cash Fund</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 flex-shrink-0">
+        <div class="bg-neutral-800 rounded-lg p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <p class="text-sm text-gray-400">Current Balance</p>
+                    <p class="text-3xl font-bold text-blue-400">
+                        @if (currentBalance != null)
+                        {
+                            @($"₱{currentBalance.ClosingBalance:N2}")
+                        }
+                        else
+                        {
+                            <span class="text-gray-400">-</span>
+                        }
+                    </p>
+                </div>
+                <button @onclick="RefreshCurrentBalance" class="text-blue-400 hover:text-blue-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                </button>
+            </div>
+            @if (currentBalance != null)
+            {
+                <div class="text-xs text-gray-400">
+                    As of @currentBalance.Date.ToString("MMM dd, yyyy")
+                </div>
+            }
+        </div>
+
+        <div class="bg-neutral-800 rounded-lg p-6">
+            <p class="text-sm text-gray-400 mb-2">Today's Opening</p>
+            <p class="text-2xl font-bold text-green-400">
+                @if (currentBalance != null)
+                {
+                    @($"₱{currentBalance.OpeningBalance:N2}")
+                }
+                else
+                {
+                    <span class="text-gray-400">-</span>
+                }
+            </p>
+        </div>
+
+        <div class="bg-neutral-800 rounded-lg p-6">
+            <p class="text-sm text-gray-400 mb-2">Total Deposits | Withdrawals</p>
+            <p class="text-2xl font-bold text-purple-400">
+                @if (currentBalance != null)
+                {
+                    @($"₱{currentBalance.Deposits:N2}")
+                }
+                else
+                {
+                    <span class="text-gray-400">-</span>
+                }
+                <span class="text-sm text-gray-400 mx-2">|</span>
+                @if (currentBalance != null)
+                {
+                    <span class="text-red-400">₱@currentBalance.Withdrawals.ToString("N2")</span>
+                }
+                else
+                {
+                    <span class="text-gray-400">-</span>
+                }
+            </p>
+        </div>
+    </div>
+
+    <div class="bg-neutral-800 rounded-lg p-4 mb-4 flex-shrink-0">
+        <h2 class="text-lg font-semibold text-white mb-3">View Specific Date</h2>
+        <div class="flex gap-3">
+            <input type="date" @bind="selectedDate" class="flex-1 border rounded-lg px-3 py-2 text-gray-200 bg-neutral-700" />
+            <button @onclick="LoadSpecificDate" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+                Load
+            </button>
+            <button @onclick="OpenUpdateModal" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                Update Fund
+            </button>
+        </div>
+    </div>
+
+    @if (selectedFund != null)
+    {
+        <div class="bg-neutral-800 rounded-lg p-4 mb-4 flex-shrink-0">
+            <h3 class="text-lg font-semibold text-white mb-3">
+                Fund Details - @selectedFund.Date.ToString("MMMM dd, yyyy")
+            </h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 bg-neutral-700 rounded">
+                    <p class="text-xs text-gray-400">Opening Balance</p>
+                    <p class="text-xl font-bold text-blue-400">₱@selectedFund.OpeningBalance.ToString("N2")</p>
+                </div>
+                <div class="p-4 bg-neutral-700 rounded">
+                    <p class="text-xs text-gray-400">Deposits</p>
+                    <p class="text-xl font-bold text-green-400">₱@selectedFund.Deposits.ToString("N2")</p>
+                </div>
+                <div class="p-4 bg-neutral-700 rounded">
+                    <p class="text-xs text-gray-400">Withdrawals</p>
+                    <p class="text-xl font-bold text-red-400">₱@selectedFund.Withdrawals.ToString("N2")</p>
+                </div>
+                <div class="p-4 bg-neutral-700 rounded">
+                    <p class="text-xs text-gray-400">Closing Balance</p>
+                    <p class="text-xl font-bold text-purple-400">₱@selectedFund.ClosingBalance.ToString("N2")</p>
+                </div>
+            </div>
+            @if (!string.IsNullOrEmpty(selectedFund.Notes))
+            {
+                <div class="mt-4 p-3 bg-neutral-700 rounded">
+                    <p class="text-sm font-medium text-gray-300">Notes:</p>
+                    <p class="text-sm text-gray-400 mt-1">@selectedFund.Notes</p>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="flex-1 overflow-auto bg-neutral-800 rounded-lg p-4">
+        <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-semibold text-white">Fund History</h2>
+            <div class="flex gap-2">
+                <input type="date" @bind="historyStartDate" class="border rounded-lg px-3 py-2 text-sm text-gray-200 bg-neutral-700" />
+                <input type="date" @bind="historyEndDate" class="border rounded-lg px-3 py-2 text-sm text-gray-200 bg-neutral-700" />
+                <button @onclick="LoadHistory" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm">
+                    Filter
+                </button>
+            </div>
+        </div>
+
+        @if (isLoadingHistory)
+        {
+            <div class="text-center py-8">
+                <p class="text-white">Loading history...</p>
+            </div>
+        }
+        else if (fundHistory == null || !fundHistory.Any())
+        {
+            <div class="text-center py-8">
+                <p class="text-gray-400">No fund history found.</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full divide-y divide-neutral-500">
+                    <thead class="bg-neutral-900 sticky top-0">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Opening</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Deposits</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Withdrawals</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Closing</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-neutral-600 divide-y divide-neutral-500">
+                        @foreach (var fund in fundHistory.OrderByDescending(f => f.Date))
+                        {
+                            <tr class="hover:bg-neutral-800">
+                                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-50 bg-neutral-700">
+                                    @fund.Date.ToString("MMM dd, yyyy")
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-200">
+                                    ₱@fund.OpeningBalance.ToString("N2")
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-green-400">
+                                    ₱@fund.Deposits.ToString("N2")
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-red-400">
+                                    ₱@fund.Withdrawals.ToString("N2")
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-gray-50">
+                                    ₱@fund.ClosingBalance.ToString("N2")
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-300 max-w-xs truncate">
+                                    @(string.IsNullOrEmpty(fund.Notes) ? "-" : fund.Notes)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@if (showUpdateModal)
+{
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseUpdateModal">
+        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-lg shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-bold text-white">Update Petty Cash Fund</h3>
+                <button @onclick="CloseUpdateModal" class="text-gray-400 hover:text-gray-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Date</label>
+                <input type="date" @bind="updateDate" class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Deposits</label>
+                <input type="number" step="0.01" @bind="updateRequest.Deposits"
+                       class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Withdrawals</label>
+                <input type="number" step="0.01" @bind="updateRequest.Withdrawals"
+                       class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700" />
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-300 mb-1">Notes (optional)</label>
+                <textarea @bind="updateRequest.Notes" rows="3"
+                          class="w-full border border-neutral-600 rounded px-3 py-2 text-gray-200 bg-neutral-700"></textarea>
+            </div>
+
+            <div class="flex gap-3">
+                <button @onclick="SaveUpdate" disabled="@isSaving"
+                        class="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50">
+                    @(isSaving ? "Saving..." : "Save")
+                </button>
+                <button @onclick="CloseUpdateModal" disabled="@isSaving"
+                        class="flex-1 bg-neutral-700 text-gray-200 px-4 py-2 rounded hover:bg-neutral-600 disabled:opacity-50">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private PettyCashFundDto? currentBalance;
+    private PettyCashFundDto? selectedFund;
+    private List<PettyCashFundDto>? fundHistory;
+    private bool isLoadingHistory;
+    private bool isSaving;
+    private bool showUpdateModal;
+
+    private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly updateDate = DateOnly.FromDateTime(DateTime.Today);
+    private DateOnly historyStartDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-30));
+    private DateOnly historyEndDate = DateOnly.FromDateTime(DateTime.Today);
+
+    private UpdatePettyCashFundRequest updateRequest = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshCurrentBalance();
+        await LoadHistory();
+    }
+
+    private async Task RefreshCurrentBalance()
+    {
+        currentBalance = await PettyCashApi.GetCurrentBalanceAsync();
+        selectedFund = currentBalance;
+    }
+
+    private async Task LoadSpecificDate()
+    {
+        selectedFund = await PettyCashApi.GetFundAsync(selectedDate);
+    }
+
+    private async Task LoadHistory()
+    {
+        isLoadingHistory = true;
+        fundHistory = await PettyCashApi.GetFundHistoryAsync(historyStartDate, historyEndDate);
+        isLoadingHistory = false;
+    }
+
+    private void OpenUpdateModal()
+    {
+        updateDate = selectedDate;
+        if (selectedFund != null)
+        {
+            updateRequest = new UpdatePettyCashFundRequest
+            {
+                Deposits = selectedFund.Deposits,
+                Withdrawals = selectedFund.Withdrawals,
+                Notes = selectedFund.Notes
+            };
+        }
+        else
+        {
+            updateRequest = new UpdatePettyCashFundRequest
+            {
+                Deposits = 0,
+                Withdrawals = 0,
+                Notes = null
+            };
+        }
+        showUpdateModal = true;
+    }
+
+    private async Task SaveUpdate()
+    {
+        isSaving = true;
+        var result = await PettyCashApi.UpdateFundAsync(updateDate, updateRequest);
+        isSaving = false;
+
+        if (result != null)
+        {
+            selectedFund = result;
+            await RefreshCurrentBalance();
+            await LoadHistory();
+            CloseUpdateModal();
+        }
+    }
+
+    private void CloseUpdateModal()
+    {
+        showUpdateModal = false;
+    }
+}

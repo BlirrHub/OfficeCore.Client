@@ -1,0 +1,284 @@
+@page "/app/liquidations"
+@attribute [Authorize]
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Services.Api
+@inject LiquidationApi LiquidationApi
+
+<div class="p-6">
+    <h1 class="text-2xl font-bold text-gray-800 mb-6">My Liquidations</h1>
+
+    <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-sm text-blue-800">
+            <strong>Note:</strong> Daily liquidations are submitted via the mobile app. 
+            This page shows your liquidation history for reference.
+        </p>
+    </div>
+
+    <div class="mb-6 flex gap-4 items-end">
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input type="date" @bind="startDate" class="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+        <div class="flex-1">
+            <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input type="date" @bind="endDate" class="w-full border border-gray-300 rounded px-3 py-2" />
+        </div>
+        <button @onclick="LoadLiquidations" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            Filter
+        </button>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-8">
+            <p class="text-gray-500">Loading your liquidations...</p>
+        </div>
+    }
+    else if (liquidations == null || !liquidations.Any())
+    {
+        <div class="bg-white rounded-lg shadow p-8 text-center">
+            <p class="text-gray-500">No liquidations found for the selected period.</p>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach (var liq in liquidations.OrderByDescending(l => l.Date))
+            {
+                <div class="bg-white rounded-lg shadow p-5 hover:shadow-lg transition-shadow">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-sm text-gray-500">Date</p>
+                            <p class="text-lg font-bold text-gray-900">@liq.Date.ToString("MMM dd, yyyy")</p>
+                        </div>
+                        @if (liq.Status == 0)
+                        {
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                Pending
+                            </span>
+                        }
+                        else if (liq.Status == 1)
+                        {
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                Approved
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                Rejected
+                            </span>
+                        }
+                    </div>
+
+                    <div class="space-y-2 mb-4">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Cash Received:</span>
+                            <span class="font-semibold text-blue-700">₱@liq.PettyCashReceived.ToString("N2")</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Total Spent:</span>
+                            <span class="font-semibold text-gray-900">₱@liq.TotalSpent.ToString("N2")</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Returned:</span>
+                            <span class="font-semibold text-green-700">₱@liq.AmountReturned.ToString("N2")</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-600">Reimbursement:</span>
+                            <span class="font-semibold text-purple-700">₱@liq.ReimbursementDue.ToString("N2")</span>
+                        </div>
+                    </div>
+
+                    <div class="text-xs text-gray-500 mb-3">
+                        @liq.Entries.Count() expense @(liq.Entries.Count() == 1 ? "entry" : "entries")
+                    </div>
+
+                    @if (liq.Status == 1)
+                    {
+                        <p class="text-xs text-green-600 mb-2">
+                            Approved on @liq.ApprovedAt?.ToString("MMM dd, yyyy")
+                        </p>
+                    }
+
+                    <button @onclick="() => ViewDetails(liq.Id)"
+                            class="w-full bg-gray-100 text-gray-700 px-3 py-2 rounded hover:bg-gray-200 text-sm">
+                        View Details
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@if (selectedLiquidation != null)
+{
+    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseModal">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-4xl shadow-lg rounded-md bg-white" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Liquidation Details</h3>
+                    <p class="text-sm text-gray-500">@selectedLiquidation.Date.ToString("MMMM dd, yyyy")</p>
+                </div>
+                <button @onclick="CloseModal" class="text-gray-400 hover:text-gray-500">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="mb-4 flex justify-between items-center">
+                @if (selectedLiquidation.Status == 0)
+                {
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        Pending Approval
+                    </span>
+                }
+                else if (selectedLiquidation.Status == 1)
+                {
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
+                        Approved
+                    </span>
+                }
+                else
+                {
+                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">
+                        Rejected
+                    </span>
+                }
+            </div>
+
+            <div class="mb-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-3 bg-blue-50 rounded">
+                    <p class="text-xs text-gray-600">Cash Received</p>
+                    <p class="text-lg font-bold text-blue-700">₱@selectedLiquidation.PettyCashReceived.ToString("N2")</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded">
+                    <p class="text-xs text-gray-600">Total Spent</p>
+                    <p class="text-lg font-bold text-gray-700">₱@selectedLiquidation.TotalSpent.ToString("N2")</p>
+                </div>
+                <div class="p-3 bg-green-50 rounded">
+                    <p class="text-xs text-gray-600">Returned</p>
+                    <p class="text-lg font-bold text-green-700">₱@selectedLiquidation.AmountReturned.ToString("N2")</p>
+                </div>
+                <div class="p-3 bg-purple-50 rounded">
+                    <p class="text-xs text-gray-600">Reimbursement</p>
+                    <p class="text-lg font-bold text-purple-700">₱@selectedLiquidation.ReimbursementDue.ToString("N2")</p>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <h4 class="font-semibold text-gray-700 mb-2">Expense Entries</h4>
+                <div class="bg-white rounded-lg border border-gray-200">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">#</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Particulars</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase">Receipt</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach (var entry in selectedLiquidation.Entries.OrderBy(e => e.SequenceOrder))
+                            {
+                                <tr>
+                                    <td class="px-4 py-3 text-sm text-gray-500">@entry.SequenceOrder</td>
+                                    <td class="px-4 py-3 text-sm text-gray-900">@entry.Particulars</td>
+                                    <td class="px-4 py-3 text-sm text-right text-gray-900">₱@entry.Amount.ToString("N2")</td>
+                                    <td class="px-4 py-3 text-sm text-center">
+                                        @if (!string.IsNullOrEmpty(entry.ReceiptImagePath))
+                                        {
+                                            <a href="@($"/api/files/receipt/{entry.ReceiptImagePath}")" target="_blank"
+                                               class="text-blue-600 hover:text-blue-800 inline-flex items-center">
+                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                View
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-400">No receipt</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot class="bg-gray-50">
+                            <tr>
+                                <td colspan="2" class="px-4 py-3 text-sm font-bold text-gray-900 text-right">Total:</td>
+                                <td class="px-4 py-3 text-sm font-bold text-gray-900 text-right">
+                                    ₱@selectedLiquidation.TotalSpent.ToString("N2")
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(selectedLiquidation.IssuedByName))
+            {
+                <div class="mb-3 p-3 bg-blue-50 rounded">
+                    <p class="text-sm text-blue-800">
+                        <strong>Issued by:</strong> @selectedLiquidation.IssuedByName on @selectedLiquidation.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")
+                    </p>
+                </div>
+            }
+
+            @if (selectedLiquidation.Status == 1)
+            {
+                <div class="p-3 bg-green-50 rounded">
+                    <p class="text-sm text-green-800">
+                        <strong>Approved on:</strong> @selectedLiquidation.ApprovedAt?.ToString("MMM dd, yyyy hh:mm tt")
+                    </p>
+                </div>
+            }
+            else if (selectedLiquidation.Status == 2)
+            {
+                <div class="p-3 bg-red-50 rounded">
+                    <p class="text-sm text-red-800">
+                        <strong>Rejected on:</strong> @selectedLiquidation.ApprovedAt?.ToString("MMM dd, yyyy hh:mm tt")
+                    </p>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private List<LiquidationDto>? liquidations;
+    private LiquidationDto? selectedLiquidation;
+    private bool isLoading;
+    private DateOnly? startDate;
+    private DateOnly? endDate;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Default to current month
+        var today = DateTime.Today;
+        startDate = new DateOnly(today.Year, today.Month, 1);
+        endDate = DateOnly.FromDateTime(today);
+
+        await LoadLiquidations();
+    }
+
+    private async Task LoadLiquidations()
+    {
+        isLoading = true;
+        liquidations = await LiquidationApi.GetMyLiquidationsAsync(startDate, endDate);
+        isLoading = false;
+    }
+
+    private async Task ViewDetails(Guid id)
+    {
+        selectedLiquidation = await LiquidationApi.GetLiquidationAsync(id);
+    }
+
+    private void CloseModal()
+    {
+        selectedLiquidation = null;
+    }
+}

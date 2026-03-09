@@ -1,62 +1,141 @@
 @using Microsoft.AspNetCore.Components.Routing
+@using OfficeCore.Client.Services.State
+@inject AuthState AuthState
 
-<nav class="space-y-1">
-    <NavLink href="/admin/dashboard" Match="NavLinkMatch.All"
-             class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-             activeClass="bg-black font-semibold">
-        Dashboard
-    </NavLink>
+@if (AuthState.UserType == "Admin")
+{
+    <!-- Admin Navigation -->
+    <nav class="space-y-1">
+        <NavLink href="/admin/dashboard" Match="NavLinkMatch.All"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            Dashboard
+        </NavLink>
 
-    <div class="@(isEmployeesExpanded ? "" : "")">
-        <button @onclick="ToggleEmployees" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950">
-            <span>Employee</span>
-            <svg class="w-4 h-4 transform transition-transform @(isEmployeesExpanded ? "rotate-90" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-            </svg>
-        </button>
-        
-        @if (isEmployeesExpanded)
-        {
-            <div class="ml-4 mt-1 space-y-1 border-l border-gray-600">
-                <NavLink href="/admin/employees"
-                         class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
-                         activeClass="bg-black font-semibold">
-                    Employees
-                </NavLink>
-                
-                <NavLink href="/admin/attendance-weekly"
-                         class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
-                         activeClass="bg-black font-semibold">
-                    Weekly Attendance
-                </NavLink>
-                
-                <NavLink href="/admin/payroll-weekly"
-                         class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
-                         activeClass="bg-black font-semibold">
-                    Weekly Payroll
-                </NavLink>
-            </div>
-        }
-    </div>
+        <NavLink href="/admin/clients"
+            class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+            activeClass="bg-black font-semibold">
+            Clients
+        </NavLink>
 
-    <NavLink href="/admin/clients"
-             class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-             activeClass="bg-black font-semibold">
-        Clients
-    </NavLink>
+        <div class="@(isEmployeesExpanded ? "" : "")">
+            <button @onclick="ToggleEmployees" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950">
+                <span>Employee</span>
+                <svg class="w-4 h-4 transform transition-transform @(isEmployeesExpanded ? "rotate-90" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+            
+            @if (isEmployeesExpanded)
+            {
+                <div class="ml-4 mt-1 space-y-1 border-l border-gray-600">
+                    <NavLink href="/admin/employees"
+                             class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
+                             activeClass="bg-black font-semibold">
+                        Employees
+                    </NavLink>
+                    
+                    <NavLink href="/admin/attendance-weekly"
+                             class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
+                             activeClass="bg-black font-semibold">
+                        Weekly Attendance
+                    </NavLink>
+                    
+                    <NavLink href="/admin/payroll-weekly"
+                             class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
+                             activeClass="bg-black font-semibold">
+                        Weekly Payroll
+                    </NavLink>
+                </div>
+            }
+        </div>
 
-    <NavLink href="/admin/settings"
-             class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
-             activeClass="bg-black font-semibold">
-        Settings
-    </NavLink>
-</nav>
+        <div class="@(isFinanceExpanded ? "" : "")">
+            <button @onclick="ToggleFinance" class="w-full flex items-center justify-between px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950">
+                <span>Finance</span>
+                <svg class="w-4 h-4 transform transition-transform @(isFinanceExpanded ? "rotate-90" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+            </button>
+            
+            @if (isFinanceExpanded)
+            {
+                <div class="ml-4 mt-1 space-y-1 border-l border-gray-600">
+                    <NavLink href="/admin/liquidations"
+                             class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
+                             activeClass="bg-black font-semibold">
+                        Daily Liquidations
+                    </NavLink>
+                    
+                    <NavLink href="/admin/cash-advances"
+                             class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
+                             activeClass="bg-black font-semibold">
+                        Cash Advances
+                    </NavLink>
+                    
+                    <NavLink href="/admin/petty-cash"
+                             class="block px-3 py-2 rounded-md text-white hover:bg-neutral-950"
+                             activeClass="bg-black font-semibold">
+                        Petty Cash Fund
+                    </NavLink>
+                </div>
+            }
+        </div>
+
+        <NavLink href="/admin/settings"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            Settings
+        </NavLink>
+    </nav>
+}
+else
+{
+    <!-- Employee Navigation -->
+    <nav class="space-y-1">
+        <NavLink href="/app/dashboard" Match="NavLinkMatch.All"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            Dashboard
+        </NavLink>
+
+        <NavLink href="/app/cash-advances"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            My Cash Advances
+        </NavLink>
+
+        <NavLink href="/app/liquidations"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            My Liquidations
+        </NavLink>
+
+        <NavLink href="/app/profile"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            Profile
+        </NavLink>
+
+        <NavLink href="/app/settings"
+                 class="block px-3 py-2 rounded-md text-white font-semibold hover:bg-neutral-950"
+                 activeClass="bg-black font-semibold">
+            Settings
+        </NavLink>
+    </nav>
+}
 
 @code {
     private bool isEmployeesExpanded = true;
+    private bool isFinanceExpanded = true;
 
     private void ToggleEmployees()
     {
         isEmployeesExpanded = !isEmployeesExpanded;
+    }
+
+    private void ToggleFinance()
+    {
+        isFinanceExpanded = !isFinanceExpanded;
     }
 }

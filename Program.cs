@@ -19,6 +19,11 @@ builder.Services.AddScoped<AuthApi>();
 builder.Services.AddScoped<AdminApi>();
 builder.Services.AddScoped<PayrollApi>();
 builder.Services.AddScoped<SettingsApi>();
+builder.Services.AddScoped<LiquidationApi>();
+builder.Services.AddScoped<LiquidationAdminApi>();
+builder.Services.AddScoped<CashAdvanceApi>();
+builder.Services.AddScoped<CashAdvanceAdminApi>();
+builder.Services.AddScoped<PettyCashAdminApi>();
 
 var host = builder.Build();
 
