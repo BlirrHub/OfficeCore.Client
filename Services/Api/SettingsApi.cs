@@ -1,15 +1,28 @@
 using System.Net.Http.Json;
+using System.Net.Http.Headers;
 using OfficeCore.Client.Models.Dtos;
+using OfficeCore.Client.Services.State;
 
 namespace OfficeCore.Client.Services.Api;
 
 public class SettingsApi
 {
     private readonly HttpClient _http;
+    private readonly AuthState _auth;
 
-    public SettingsApi(HttpClient http)
+    public SettingsApi(HttpClient http, AuthState auth)
     {
         _http = http;
+        _auth = auth;
+    }
+
+    private void SetAuthHeader()
+    {
+        if (!string.IsNullOrWhiteSpace(_auth.AccessToken))
+        {
+            _http.DefaultRequestHeaders.Authorization = 
+                new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+        }
     }
 
     // ===== DEPARTMENTS =====
@@ -18,6 +31,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var result = await _http.GetFromJsonAsync<List<DepartmentDto>>("api/settings/departments");
             return result ?? new List<DepartmentDto>();
         }
@@ -31,12 +45,19 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.PostAsJsonAsync("api/settings/departments", request);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Create department failed: {response.StatusCode} - {error}");
+            }
             return response.IsSuccessStatusCode;
         }
-        catch
+        catch (Exception ex)
         {
-            return false;
+            Console.WriteLine($"Exception creating department: {ex.Message}");
+            throw;
         }
     }
 
@@ -44,6 +65,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.PutAsJsonAsync($"api/settings/departments/{id}", request);
             return response.IsSuccessStatusCode;
         }
@@ -57,6 +79,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.DeleteAsync($"api/settings/departments/{id}");
             return response.IsSuccessStatusCode;
         }
@@ -72,6 +95,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var result = await _http.GetFromJsonAsync<List<PositionDto>>("api/settings/positions");
             return result ?? new List<PositionDto>();
         }
@@ -85,6 +109,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.PostAsJsonAsync("api/settings/positions", request);
             return response.IsSuccessStatusCode;
         }
@@ -98,6 +123,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.PutAsJsonAsync($"api/settings/positions/{id}", request);
             return response.IsSuccessStatusCode;
         }
@@ -111,6 +137,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.DeleteAsync($"api/settings/positions/{id}");
             return response.IsSuccessStatusCode;
         }
@@ -126,6 +153,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var result = await _http.GetFromJsonAsync<List<RoleDto>>("api/settings/roles");
             return result ?? new List<RoleDto>();
         }
@@ -139,6 +167,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.PostAsJsonAsync("api/settings/roles", request);
             return response.IsSuccessStatusCode;
         }
@@ -152,6 +181,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.PutAsJsonAsync($"api/settings/roles/{id}", request);
             return response.IsSuccessStatusCode;
         }
@@ -165,6 +195,7 @@ public class SettingsApi
     {
         try
         {
+            SetAuthHeader();
             var response = await _http.DeleteAsync($"api/settings/roles/{id}");
             return response.IsSuccessStatusCode;
         }

@@ -32,14 +32,15 @@
             <ComboBox TValue="string"
                       Label="Department"
                       Placeholder="Select department..."
-                      @bind-Value="employee.Department"
+                      Value="@employee.Department"
+                      ValueChanged="@OnDepartmentChanged"
                       Options="@departmentOptions" />
 
             <ComboBox TValue="string"
                       Label="Position"
                       Placeholder="Select position..."
                       @bind-Value="employee.Position"
-                      Options="@positionOptions" />
+                      Options="@filteredPositionOptions" />
 
             <div class="grid grid-cols-2 gap-3">
                 <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="employee.BiometricId" />
@@ -134,7 +135,8 @@
     private string SelectedSchedule = "8-5";
     
     private List<ComboBoxOption<string>> departmentOptions = new();
-    private List<ComboBoxOption<string>> positionOptions = new();
+    private List<PositionDto> allPositions = new();
+    private List<ComboBoxOption<string>> filteredPositionOptions = new();
     private List<RoleDto> availableRoles = new();
 
     private string? message;
@@ -161,11 +163,8 @@
             .Select(d => new ComboBoxOption<string> { Value = d.Name, Text = d.Name })
             .ToList();
 
-        // Load positions
-        var positions = await SettingsApi.GetPositionsAsync();
-        positionOptions = positions
-            .Select(p => new ComboBoxOption<string> { Value = p.Name, Text = p.Name })
-            .ToList();
+        // Load all positions
+        allPositions = await SettingsApi.GetPositionsAsync();
 
         // Load roles
         availableRoles = await SettingsApi.GetRolesAsync();
@@ -192,9 +191,37 @@
             {
                 SelectedSchedule = "none";
             }
+            
+            // Filter positions based on current department
+            FilterPositions();
         }
         
         isLoading = false;
+    }
+
+    private async Task OnDepartmentChanged(string? newDepartment)
+    {
+        if (employee == null) return;
+        
+        employee.Department = newDepartment;
+        employee.Position = null; // Clear position when department changes
+        FilterPositions();
+        await Task.CompletedTask;
+    }
+
+    private void FilterPositions()
+    {
+        if (employee == null || string.IsNullOrWhiteSpace(employee.Department))
+        {
+            filteredPositionOptions = new();
+        }
+        else
+        {
+            filteredPositionOptions = allPositions
+                .Where(p => p.DepartmentName == employee.Department)
+                .Select(p => new ComboBoxOption<string> { Value = p.Name, Text = p.Name })
+                .ToList();
+        }
     }
 
     private void ToggleRole(string roleName)

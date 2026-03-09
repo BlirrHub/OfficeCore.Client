@@ -111,35 +111,51 @@
                     <div class="space-y-2 max-h-[500px] overflow-y-auto">
                         @foreach (var pos in positions)
                         {
-                            <div class="flex items-center justify-between bg-neutral-700 border border-neutral-600 rounded-lg p-3 hover:bg-neutral-600">
+                            <div class="bg-neutral-700 border border-neutral-600 rounded-lg p-3 hover:bg-neutral-600">
                                 @if (editingPositionId == pos.Id)
                                 {
-                                    <input @bind-value="editingPositionName" 
-                                           @bind-value:event="oninput"
-                                           class="bg-neutral-900 border border-neutral-500 rounded px-2 py-1 text-sm flex-1 mr-2 text-white" />
-                                    <div class="flex gap-2">
-                                        <button @onclick="() => SavePosition(pos.Id)" 
-                                                class="text-green-400 hover:text-green-300 text-xs font-semibold">
-                                            Save
-                                        </button>
-                                        <button @onclick="CancelEditPosition" 
-                                                class="text-gray-400 hover:text-gray-300 text-xs font-semibold">
-                                            Cancel
-                                        </button>
+                                    <div class="space-y-2">
+                                        <input @bind-value="editingPositionName" 
+                                               @bind-value:event="oninput"
+                                               placeholder="Position name"
+                                               class="bg-neutral-900 border border-neutral-500 rounded px-2 py-1 text-sm w-full text-white" />
+                                        <select @bind="editingPositionDepartmentId" 
+                                                class="bg-neutral-900 border border-neutral-500 rounded px-2 py-1 text-sm w-full text-white">
+                                            <option value="">Select Department</option>
+                                            @foreach (var dept in departments)
+                                            {
+                                                <option value="@dept.Id">@dept.Name</option>
+                                            }
+                                        </select>
+                                        <div class="flex gap-2">
+                                            <button @onclick="() => SavePosition(pos.Id)" 
+                                                    class="text-green-400 hover:text-green-300 text-xs font-semibold">
+                                                Save
+                                            </button>
+                                            <button @onclick="CancelEditPosition" 
+                                                    class="text-gray-400 hover:text-gray-300 text-xs font-semibold">
+                                                Cancel
+                                            </button>
+                                        </div>
                                     </div>
                                 }
                                 else
                                 {
-                                    <span class="text-sm text-white">@pos.Name</span>
-                                    <div class="flex gap-2">
-                                        <button @onclick="() => EditPosition(pos)" 
-                                                class="text-blue-400 hover:text-blue-300 text-xs font-semibold">
-                                            Edit
-                                        </button>
-                                        <button @onclick="() => DeletePosition(pos.Id)" 
-                                                class="text-red-400 hover:text-red-300 text-xs font-semibold">
-                                            Delete
-                                        </button>
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <div class="text-sm text-white">@pos.Name</div>
+                                            <div class="text-xs text-gray-400">@pos.DepartmentName</div>
+                                        </div>
+                                        <div class="flex gap-2">
+                                            <button @onclick="() => EditPosition(pos)" 
+                                                    class="text-blue-400 hover:text-blue-300 text-xs font-semibold">
+                                                Edit
+                                            </button>
+                                            <button @onclick="() => DeletePosition(pos.Id)" 
+                                                    class="text-red-400 hover:text-red-300 text-xs font-semibold">
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 }
                             </div>
@@ -153,17 +169,25 @@
 
                     @if (showCreatePosition)
                     {
-                        <div class="mt-4 p-3 border border-neutral-600 rounded-lg bg-neutral-900">
+                        <div class="mt-4 p-3 border border-neutral-600 rounded-lg bg-neutral-900 space-y-2">
                             <input @bind-value="newPositionName" 
                                    @bind-value:event="oninput"
                                    placeholder="Position name..." 
-                                   class="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-sm w-full mb-2 text-white placeholder-gray-500" />
+                                   class="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-sm w-full text-white placeholder-gray-500" />
+                            <select @bind="newPositionDepartmentId" 
+                                    class="bg-neutral-800 border border-neutral-600 rounded px-3 py-2 text-sm w-full text-white">
+                                <option value="">Select Department</option>
+                                @foreach (var dept in departments)
+                                {
+                                    <option value="@dept.Id">@dept.Name</option>
+                                }
+                            </select>
                             <div class="flex gap-2">
                                 <button @onclick="CreatePosition" 
                                         class="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 border border-neutral-600">
                                     Create
                                 </button>
-                                <button @onclick="() => showCreatePosition = false" 
+                                <button @onclick="CancelCreatePosition" 
                                         class="border border-neutral-600 px-4 py-2 rounded-lg text-sm hover:bg-neutral-800 text-gray-300">
                                     Cancel
                                 </button>
@@ -271,8 +295,10 @@
     private bool isLoadingPositions = false;
     private bool showCreatePosition = false;
     private string newPositionName = string.Empty;
+    private string newPositionDepartmentId = string.Empty;
     private Guid? editingPositionId = null;
     private string editingPositionName = string.Empty;
+    private string editingPositionDepartmentId = string.Empty;
 
     // Roles
     private List<RoleDto> roles = new();
@@ -315,12 +341,28 @@
     {
         if (string.IsNullOrWhiteSpace(newDepartmentName)) return;
 
-        var success = await SettingsApi.CreateDepartmentAsync(new CreateDepartmentRequest { Name = newDepartmentName });
-        if (success)
+        try
         {
-            await LoadDepartments();
-            showCreateDepartment = false;
-            newDepartmentName = string.Empty;
+            await JSRuntime.InvokeVoidAsync("console.log", "Creating department:", newDepartmentName);
+            var success = await SettingsApi.CreateDepartmentAsync(new CreateDepartmentRequest { Name = newDepartmentName });
+            await JSRuntime.InvokeVoidAsync("console.log", "Create result:", success);
+            
+            if (success)
+            {
+                await LoadDepartments();
+                showCreateDepartment = false;
+                newDepartmentName = string.Empty;
+                StateHasChanged();
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Failed to create department. Check console for details.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "Error creating department:", ex.Message);
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
         }
     }
 
@@ -374,18 +416,33 @@
     {
         showCreatePosition = true;
         newPositionName = string.Empty;
+        newPositionDepartmentId = string.Empty;
+    }
+
+    private void CancelCreatePosition()
+    {
+        showCreatePosition = false;
+        newPositionName = string.Empty;
+        newPositionDepartmentId = string.Empty;
     }
 
     private async Task CreatePosition()
     {
         if (string.IsNullOrWhiteSpace(newPositionName)) return;
+        if (string.IsNullOrWhiteSpace(newPositionDepartmentId) || !Guid.TryParse(newPositionDepartmentId, out var deptId)) return;
 
-        var success = await SettingsApi.CreatePositionAsync(new CreatePositionRequest { Name = newPositionName });
+        var success = await SettingsApi.CreatePositionAsync(new CreatePositionRequest 
+        { 
+            Name = newPositionName,
+            DepartmentId = deptId
+        });
+        
         if (success)
         {
             await LoadPositions();
             showCreatePosition = false;
             newPositionName = string.Empty;
+            newPositionDepartmentId = string.Empty;
         }
     }
 
@@ -393,18 +450,26 @@
     {
         editingPositionId = pos.Id;
         editingPositionName = pos.Name;
+        editingPositionDepartmentId = pos.DepartmentId.ToString();
     }
 
     private async Task SavePosition(Guid id)
     {
         if (string.IsNullOrWhiteSpace(editingPositionName)) return;
+        if (string.IsNullOrWhiteSpace(editingPositionDepartmentId) || !Guid.TryParse(editingPositionDepartmentId, out var deptId)) return;
 
-        var success = await SettingsApi.UpdatePositionAsync(id, new UpdatePositionRequest { Name = editingPositionName });
+        var success = await SettingsApi.UpdatePositionAsync(id, new UpdatePositionRequest 
+        { 
+            Name = editingPositionName,
+            DepartmentId = deptId
+        });
+        
         if (success)
         {
             await LoadPositions();
             editingPositionId = null;
             editingPositionName = string.Empty;
+            editingPositionDepartmentId = string.Empty;
         }
     }
 
@@ -412,6 +477,7 @@
     {
         editingPositionId = null;
         editingPositionName = string.Empty;
+        editingPositionDepartmentId = string.Empty;
     }
 
     private async Task DeletePosition(Guid id)
