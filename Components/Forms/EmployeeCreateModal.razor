@@ -1,6 +1,9 @@
 @using OfficeCore.Client.Models.Dtos
 @using OfficeCore.Client.Components.Common
+@using OfficeCore.Client.Components.Forms
+@using static OfficeCore.Client.Components.Forms.ComboBox<string>
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+@inject OfficeCore.Client.Services.Api.SettingsApi SettingsApi
 
 <Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Create Employee" Size="Modal.ModalSize.Medium">
     <div class="grid grid-cols-1 gap-3">
@@ -11,8 +14,17 @@
             <input class="border rounded-lg px-3 py-2" placeholder="Last name" @bind="Req.LastName" />
         </div>
 
-        <input class="border rounded-lg px-3 py-2" placeholder="Department" @bind="Req.Department" />
-        <input class="border rounded-lg px-3 py-2" placeholder="Position" @bind="Req.Position" />
+        <ComboBox TValue="string"
+                  Label="Department"
+                  Placeholder="Select department..."
+                  @bind-Value="Req.Department"
+                  Options="@departmentOptions" />
+
+        <ComboBox TValue="string"
+                  Label="Position"
+                  Placeholder="Select position..."
+                  @bind-Value="Req.Position"
+                  Options="@positionOptions" />
 
         <div class="grid grid-cols-2 gap-3">
             <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="Req.BiometricId" />
@@ -51,9 +63,27 @@
             </div>
         </div>
 
-        <input class="border rounded-lg px-3 py-2"
-               placeholder="Roles (comma separated: HR,Payroll)"
-               @bind="RolesInput" />
+        <div>
+            <label class="text-sm text-gray-700 font-medium">Roles</label>
+            <div class="border rounded-lg p-3 bg-gray-50 max-h-32 overflow-y-auto">
+                @if (availableRoles.Count == 0)
+                {
+                    <p class="text-sm text-gray-500">No roles available</p>
+                }
+                else
+                {
+                    @foreach (var role in availableRoles)
+                    {
+                        <label class="flex items-center gap-2 text-sm mb-1 cursor-pointer">
+                            <input type="checkbox" 
+                                   checked="@selectedRoles.Contains(role.Name)"
+                                   @onchange="@(e => ToggleRole(role.Name))" />
+                            @role.Name
+                        </label>
+                    }
+                }
+            </div>
+        </div>
 
         @if (!string.IsNullOrWhiteSpace(Message))
         {
@@ -79,10 +109,57 @@
     [Parameter] public EventCallback OnEmployeeCreated { get; set; }
 
     private CreateEmployeeRequest Req = new();
-    private string RolesInput = "";
+    private List<ComboBoxOption<string>> departmentOptions = new();
+    private List<ComboBoxOption<string>> positionOptions = new();
+    private List<RoleDto> availableRoles = new();
+    private HashSet<string> selectedRoles = new();
+    
     private string SelectedSchedule = "8-5";
     private string? Message;
     private bool IsError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOptions();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen)
+        {
+            await LoadOptions();
+        }
+    }
+
+    private async Task LoadOptions()
+    {
+        // Load departments
+        var departments = await SettingsApi.GetDepartmentsAsync();
+        departmentOptions = departments
+            .Select(d => new ComboBoxOption<string> { Value = d.Name, Text = d.Name })
+            .ToList();
+
+        // Load positions
+        var positions = await SettingsApi.GetPositionsAsync();
+        positionOptions = positions
+            .Select(p => new ComboBoxOption<string> { Value = p.Name, Text = p.Name })
+            .ToList();
+
+        // Load roles
+        availableRoles = await SettingsApi.GetRolesAsync();
+    }
+
+    private void ToggleRole(string roleName)
+    {
+        if (selectedRoles.Contains(roleName))
+        {
+            selectedRoles.Remove(roleName);
+        }
+        else
+        {
+            selectedRoles.Add(roleName);
+        }
+    }
 
     private async Task CreateNewEmployee()
     {
@@ -91,9 +168,8 @@
         // set default temp password and apply schedule selection
         Req.TempPassword = "password";
 
-        Req.Roles = RolesInput
-            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .ToList();
+        // Set roles from selected checkboxes
+        Req.Roles = selectedRoles.ToList();
 
         // map schedule dropdown to time fields
         if (SelectedSchedule == "8-5")
@@ -122,7 +198,7 @@
             // Reset form
             await Task.Delay(1000); // Show success message briefly
             Req = new();
-            RolesInput = "";
+            selectedRoles.Clear();
             SelectedSchedule = "8-5";
             Message = null;
             
@@ -136,7 +212,7 @@
     {
         // Reset form
         Req = new();
-        RolesInput = "";
+        selectedRoles.Clear();
         SelectedSchedule = "8-5";
         Message = null;
         IsError = false;

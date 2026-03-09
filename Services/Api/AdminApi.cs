@@ -84,7 +84,8 @@ public class AdminApi
             employee.HasSSSDeduction,
             employee.HasPhilHealthDeduction,
             employee.HasPagIBIGDeduction,
-            employee.IsActive
+            employee.IsActive,
+            employee.Roles
         };
                 // StdHoursPerDay removed
 

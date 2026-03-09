@@ -1,0 +1,74 @@
+@typeparam TValue
+
+<div class="flex flex-col gap-1">
+    @if (!string.IsNullOrWhiteSpace(Label))
+    {
+        <label class="text-sm text-gray-700 font-medium">@Label</label>
+    }
+    
+    <select 
+        class="border rounded-lg px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+        value="@Value"
+        @onchange="OnValueChanged">
+        
+        <option value="">@Placeholder</option>
+        
+        @if (Options != null)
+        {
+            @foreach (var option in Options)
+            {
+                <option value="@option.Value">@option.Text</option>
+            }
+        }
+    </select>
+    
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <span class="text-xs text-red-600">@ErrorMessage</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string? Label { get; set; }
+    [Parameter] public string Placeholder { get; set; } = "Select an option...";
+    [Parameter] public TValue? Value { get; set; }
+    [Parameter] public EventCallback<TValue?> ValueChanged { get; set; }
+    [Parameter] public List<ComboBoxOption<TValue>>? Options { get; set; }
+    [Parameter] public string? ErrorMessage { get; set; }
+
+    private async Task OnValueChanged(ChangeEventArgs e)
+    {
+        var stringValue = e.Value?.ToString();
+        
+        if (string.IsNullOrWhiteSpace(stringValue))
+        {
+            Value = default;
+        }
+        else if (typeof(TValue) == typeof(string))
+        {
+            Value = (TValue)(object)stringValue;
+        }
+        else if (typeof(TValue) == typeof(Guid) || typeof(TValue) == typeof(Guid?))
+        {
+            if (Guid.TryParse(stringValue, out var guidValue))
+            {
+                Value = (TValue)(object)guidValue;
+            }
+        }
+        else if (typeof(TValue) == typeof(int) || typeof(TValue) == typeof(int?))
+        {
+            if (int.TryParse(stringValue, out var intValue))
+            {
+                Value = (TValue)(object)intValue;
+            }
+        }
+        
+        await ValueChanged.InvokeAsync(Value);
+    }
+
+    public class ComboBoxOption<T>
+    {
+        public T Value { get; set; } = default!;
+        public string Text { get; set; } = string.Empty;
+    }
+}

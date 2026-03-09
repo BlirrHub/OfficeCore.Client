@@ -1,6 +1,10 @@
 @using OfficeCore.Client.Features.Employees
 @using OfficeCore.Client.Components.Common
+@using OfficeCore.Client.Components.Forms
+@using OfficeCore.Client.Models.Dtos
+@using static OfficeCore.Client.Components.Forms.ComboBox<string>
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+@inject OfficeCore.Client.Services.Api.SettingsApi SettingsApi
 
 <Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Edit Employee" Size="Modal.ModalSize.Medium">
     @if (isLoading)
@@ -25,8 +29,17 @@
                 <input class="border rounded-lg px-3 py-2" placeholder="Last name" @bind="employee.LastName" />
             </div>
 
-            <input class="border rounded-lg px-3 py-2" placeholder="Department" @bind="employee.Department" />
-            <input class="border rounded-lg px-3 py-2" placeholder="Position" @bind="employee.Position" />
+            <ComboBox TValue="string"
+                      Label="Department"
+                      Placeholder="Select department..."
+                      @bind-Value="employee.Department"
+                      Options="@departmentOptions" />
+
+            <ComboBox TValue="string"
+                      Label="Position"
+                      Placeholder="Select position..."
+                      @bind-Value="employee.Position"
+                      Options="@positionOptions" />
 
             <div class="grid grid-cols-2 gap-3">
                 <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="employee.BiometricId" />
@@ -65,6 +78,28 @@
                 </div>
             </div>
 
+            <div>
+                <label class="text-sm text-gray-700 font-medium">Roles</label>
+                <div class="border rounded-lg p-3 bg-gray-50 max-h-32 overflow-y-auto">
+                    @if (availableRoles.Count == 0)
+                    {
+                        <p class="text-sm text-gray-500">No roles available</p>
+                    }
+                    else
+                    {
+                        @foreach (var role in availableRoles)
+                        {
+                            <label class="flex items-center gap-2 text-sm mb-1 cursor-pointer">
+                                <input type="checkbox" 
+                                       checked="@employee.Roles.Contains(role.Name)"
+                                       @onchange="@(e => ToggleRole(role.Name))" />
+                                @role.Name
+                            </label>
+                        }
+                    }
+                </div>
+            </div>
+
             <label class="flex items-center gap-2 text-sm">
                 <input type="checkbox" @bind="employee.IsActive" />
                 Active
@@ -97,9 +132,18 @@
     private Employee? employee;
     private bool isLoading = true;
     private string SelectedSchedule = "8-5";
+    
+    private List<ComboBoxOption<string>> departmentOptions = new();
+    private List<ComboBoxOption<string>> positionOptions = new();
+    private List<RoleDto> availableRoles = new();
 
     private string? message;
     private bool isError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOptions();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -107,6 +151,24 @@
         {
             await LoadEmployee();
         }
+    }
+
+    private async Task LoadOptions()
+    {
+        // Load departments
+        var departments = await SettingsApi.GetDepartmentsAsync();
+        departmentOptions = departments
+            .Select(d => new ComboBoxOption<string> { Value = d.Name, Text = d.Name })
+            .ToList();
+
+        // Load positions
+        var positions = await SettingsApi.GetPositionsAsync();
+        positionOptions = positions
+            .Select(p => new ComboBoxOption<string> { Value = p.Name, Text = p.Name })
+            .ToList();
+
+        // Load roles
+        availableRoles = await SettingsApi.GetRolesAsync();
     }
 
     private async Task LoadEmployee()
@@ -133,6 +195,20 @@
         }
         
         isLoading = false;
+    }
+
+    private void ToggleRole(string roleName)
+    {
+        if (employee == null) return;
+        
+        if (employee.Roles.Contains(roleName))
+        {
+            employee.Roles.Remove(roleName);
+        }
+        else
+        {
+            employee.Roles.Add(roleName);
+        }
     }
 
     private async Task Save()

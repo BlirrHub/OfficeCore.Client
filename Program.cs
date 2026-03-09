@@ -18,6 +18,7 @@ builder.Services.AddSingleton<AuthState>();
 builder.Services.AddScoped<AuthApi>();
 builder.Services.AddScoped<AdminApi>();
 builder.Services.AddScoped<PayrollApi>();
+builder.Services.AddScoped<SettingsApi>();
 
 var host = builder.Build();
 
