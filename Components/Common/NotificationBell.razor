@@ -1,0 +1,190 @@
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Services.Api
+@inject NotificationApi NotificationApi
+@inject NavigationManager Navigation
+
+<div class="relative">
+    <button @onclick="ToggleDropdown" class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+        </svg>
+        @if (unreadCount > 0)
+        {
+            <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                @(unreadCount > 99 ? "99+" : unreadCount.ToString())
+            </span>
+        }
+    </button>
+
+    @if (isOpen)
+    {
+        <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+                @if (unreadCount > 0)
+                {
+                    <button @onclick="MarkAllAsRead" class="text-sm text-blue-600 hover:text-blue-700">
+                        Mark all read
+                    </button>
+                }
+            </div>
+
+            <div class="max-h-96 overflow-y-auto">
+                @if (notifications.Count == 0)
+                {
+                    <div class="p-4 text-center text-gray-500">
+                        No notifications
+                    </div>
+                }
+                else
+                {
+                    @foreach (var notification in notifications)
+                    {
+                        <div class="@GetNotificationClasses(notification) cursor-pointer hover:bg-gray-50 transition-colors" 
+                             @onclick="() => HandleNotificationClick(notification)">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <p class="@GetTitleClasses(notification)">@notification.Title</p>
+                                    <p class="text-sm text-gray-600 mt-1">@notification.Message</p>
+                                    <p class="text-xs text-gray-400 mt-1">@FormatTimeAgo(notification.CreatedAt)</p>
+                                </div>
+                                <button @onclick="(e) => DeleteNotification(notification.Id, e)" 
+                                        @onclick:stopPropagation="true"
+                                        class="ml-2 text-gray-400 hover:text-red-500">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            @if (notifications.Count > 0)
+            {
+                <div class="p-2 border-t border-gray-200 text-center">
+                    <button @onclick="ViewAllNotifications" class="text-sm text-blue-600 hover:text-blue-700">
+                        View all notifications
+                    </button>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private bool isOpen = false;
+    private int unreadCount = 0;
+    private List<NotificationDto> notifications = new();
+    private System.Threading.Timer? refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadNotifications();
+        
+        // Auto-refresh every 30 seconds
+        refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadNotifications();
+                StateHasChanged();
+            });
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    private async Task LoadNotifications()
+    {
+        notifications = await NotificationApi.GetNotificationsAsync(10);
+        unreadCount = await NotificationApi.GetUnreadCountAsync();
+    }
+
+    private void ToggleDropdown()
+    {
+        isOpen = !isOpen;
+    }
+
+    private async Task HandleNotificationClick(NotificationDto notification)
+    {
+        if (!notification.IsRead)
+        {
+            await NotificationApi.MarkAsReadAsync(notification.Id);
+            notification.IsRead = true;
+            unreadCount = Math.Max(0, unreadCount - 1);
+        }
+
+        if (!string.IsNullOrEmpty(notification.ActionUrl))
+        {
+            Navigation.NavigateTo(notification.ActionUrl);
+        }
+
+        isOpen = false;
+    }
+
+    private async Task DeleteNotification(Guid id, MouseEventArgs e)
+    {
+        var notification = notifications.FirstOrDefault(n => n.Id == id);
+        if (notification != null)
+        {
+            if (!notification.IsRead)
+            {
+                unreadCount = Math.Max(0, unreadCount - 1);
+            }
+            
+            notifications.Remove(notification);
+            await NotificationApi.DeleteNotificationAsync(id);
+        }
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        await NotificationApi.MarkAllAsReadAsync();
+        foreach (var notification in notifications)
+        {
+            notification.IsRead = true;
+        }
+        unreadCount = 0;
+    }
+
+    private void ViewAllNotifications()
+    {
+        Navigation.NavigateTo("/notifications");
+        isOpen = false;
+    }
+
+    private string GetNotificationClasses(NotificationDto notification)
+    {
+        return notification.IsRead 
+            ? "p-4 border-b border-gray-200" 
+            : "p-4 border-b border-gray-200 bg-blue-50";
+    }
+
+    private string GetTitleClasses(NotificationDto notification)
+    {
+        return notification.IsRead 
+            ? "font-medium text-gray-900" 
+            : "font-semibold text-gray-900";
+    }
+
+    private string FormatTimeAgo(DateTimeOffset time)
+    {
+        var diff = DateTimeOffset.Now - time;
+        
+        if (diff.TotalMinutes < 1)
+            return "Just now";
+        if (diff.TotalMinutes < 60)
+            return $"{(int)diff.TotalMinutes}m ago";
+        if (diff.TotalHours < 24)
+            return $"{(int)diff.TotalHours}h ago";
+        if (diff.TotalDays < 7)
+            return $"{(int)diff.TotalDays}d ago";
+        
+        return time.ToString("MMM dd");
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+}
