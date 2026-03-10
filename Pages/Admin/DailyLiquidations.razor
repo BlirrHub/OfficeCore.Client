@@ -141,8 +141,8 @@
 
 @if (selectedLiquidation != null)
 {
-    <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" @onclick="CloseModal">
-        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-4xl shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
+    <div class="fixed inset-0 backdrop-blur-md bg-black/30 flex items-center justify-center z-50 overflow-y-auto" @onclick="CloseModal">
+        <div class="bg-gray-900 rounded-2xl p-6 w-11/12 max-w-4xl shadow-2xl border border-neutral-900 my-8 mx-4" @onclick:stopPropagation="true">
             <div class="flex justify-between items-start mb-4">
                 <div>
                     <h3 class="text-lg font-bold text-white">Liquidation Details</h3>
@@ -156,19 +156,19 @@
             </div>
 
             <div class="mb-4 grid grid-cols-2 gap-4">
-                <div class="p-3 bg-neutral-700 rounded">
+                <div class="p-3 bg-gray-800 border border-gray-700 rounded-lg">
                     <p class="text-xs text-gray-400">Petty Cash Received</p>
                     <p class="text-lg font-bold text-blue-400">₱@selectedLiquidation.PettyCashReceived.ToString("N2")</p>
                 </div>
-                <div class="p-3 bg-neutral-700 rounded">
+                <div class="p-3 bg-gray-800 border border-gray-700 rounded-lg">
                     <p class="text-xs text-gray-400">Total Spent</p>
                     <p class="text-lg font-bold text-gray-200">₱@selectedLiquidation.TotalSpent.ToString("N2")</p>
                 </div>
-                <div class="p-3 bg-neutral-700 rounded">
+                <div class="p-3 bg-gray-800 border border-gray-700 rounded-lg">
                     <p class="text-xs text-gray-400">Amount Returned</p>
                     <p class="text-lg font-bold text-green-400">₱@selectedLiquidation.AmountReturned.ToString("N2")</p>
                 </div>
-                <div class="p-3 bg-neutral-700 rounded">
+                <div class="p-3 bg-gray-800 border border-gray-700 rounded-lg">
                     <p class="text-xs text-gray-400">Reimbursement Due</p>
                     <p class="text-lg font-bold text-purple-400">₱@selectedLiquidation.ReimbursementDue.ToString("N2")</p>
                 </div>
@@ -176,8 +176,8 @@
 
             <div class="mb-4">
                 <h4 class="font-semibold text-gray-200 mb-2">Expense Entries</h4>
-                <table class="min-w-full divide-y divide-neutral-500">
-                    <thead class="bg-neutral-900">
+                <table class="min-w-full divide-y divide-gray-700">
+                    <thead class="bg-gray-950">
                         <tr>
                             <th class="px-4 py-2 text-left text-xs font-bold text-white uppercase">#</th>
                             <th class="px-4 py-2 text-left text-xs font-bold text-white uppercase">Particulars</th>
@@ -185,7 +185,7 @@
                             <th class="px-4 py-2 text-center text-xs font-bold text-white uppercase">Receipt</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-neutral-600 divide-y divide-neutral-500">
+                    <tbody class="bg-gray-800 divide-y divide-gray-700">
                         @foreach (var entry in selectedLiquidation.Entries.OrderBy(e => e.SequenceOrder))
                         {
                             <tr>
@@ -193,10 +193,10 @@
                                 <td class="px-4 py-2 text-sm text-gray-50">@entry.Particulars</td>
                                 <td class="px-4 py-2 text-sm text-right text-gray-50">₱@entry.Amount.ToString("N2")</td>
                                 <td class="px-4 py-2 text-sm text-center">
-                                    @if (!string.IsNullOrEmpty(entry.ReceiptImagePath))
+                                    @if (!string.IsNullOrEmpty(entry.ReceiptImageUrl))
                                     {
-                                        <a href="@($"/api/files/receipt/{entry.ReceiptImagePath}")" target="_blank"
-                                           class="text-blue-600 hover:text-blue-800">
+                                        <a href="@entry.ReceiptImageUrl" target="_blank"
+                                           class="text-blue-400 hover:text-blue-300">
                                             View
                                         </a>
                                     }

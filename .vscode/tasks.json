@@ -13,7 +13,9 @@
 		{
 			"type": "shell",
 			"command": "dotnet",
-			"args": ["watch"],
+			"args": [
+				"watch"
+			],
 			"cwd": "${workspaceFolder}/OfficeCore.Client",
 			"group": "build",
 			"isBackground": true,
@@ -24,7 +26,9 @@
 		{
 			"type": "shell",
 			"command": "dotnet",
-			"args": ["watch"],
+			"args": [
+				"watch"
+			],
 			"cwd": "${workspaceFolder}/OfficeCore.Server",
 			"group": "build",
 			"isBackground": true,
@@ -35,7 +39,9 @@
 		{
 			"type": "shell",
 			"command": "echo",
-			"args": ["Running all watch tasks..."],
+			"args": [
+				"Running all watch tasks..."
+			],
 			"group": "build",
 			"dependsOn": [
 				"npm: watch - tailwind",

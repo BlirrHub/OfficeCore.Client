@@ -121,8 +121,8 @@
 
 @if (showRequestModal)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-70 overflow-y-auto h-full w-full z-50" @onclick="CloseRequestModal">
-        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-lg shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
+    <div class="fixed inset-0 backdrop-blur-md bg-black/30 flex items-center justify-center z-50 overflow-y-auto" @onclick="CloseRequestModal">
+        <div class="bg-gray-900 rounded-2xl p-6 w-11/12 max-w-lg shadow-2xl border border-neutral-900 my-8 mx-4" @onclick:stopPropagation="true">
             <div class="flex justify-between items-start mb-4">
                 <h3 class="text-lg font-bold text-white">Request Cash Advance</h3>
                 <button @onclick="CloseRequestModal" class="text-gray-400 hover:text-gray-300">
@@ -138,7 +138,7 @@
                 </label>
                 <input type="number" step="0.01" min="100" max="1000"
                        @bind="newRequest.Amount"
-                       class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                       class="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                        placeholder="Enter amount" />
                 @if (!string.IsNullOrEmpty(amountError))
                 {
@@ -151,7 +151,7 @@
                     Reason (optional)
                 </label>
                 <textarea @bind="newRequest.Reason" rows="4"
-                          class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                          class="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="Explain why you need this cash advance (optional)"></textarea>
                 @if (!string.IsNullOrEmpty(reasonError))
                 {
@@ -161,11 +161,11 @@
 
             <div class="flex gap-3">
                 <button @onclick="SubmitRequest" disabled="@isSaving"
-                        class="flex-1 bg-black text-white border rounded-2xl px-4 py-2 hover:bg-gray-800 disabled:opacity-50">
+                        class="flex-1 bg-blue-600 text-white rounded-2xl px-4 py-2 hover:bg-blue-700 disabled:opacity-50 transition-colors">
                     @(isSaving ? "Submitting..." : "Submit Request")
                 </button>
                 <button @onclick="CloseRequestModal" disabled="@isSaving"
-                        class="flex-1 bg-neutral-700 border border-neutral-600 text-white px-4 py-2 rounded-2xl hover:bg-neutral-600 disabled:opacity-50">
+                        class="flex-1 bg-gray-800 border border-gray-600 text-white px-4 py-2 rounded-2xl hover:bg-gray-700 disabled:opacity-50 transition-colors">
                     Cancel
                 </button>
             </div>
@@ -175,8 +175,8 @@
 
 @if (selectedRequest != null)
 {
-    <div class="fixed inset-0 bg-black bg-opacity-70 overflow-y-auto h-full w-full z-50" @onclick="CloseDetailsModal">
-        <div class="relative top-20 mx-auto p-5 border border-neutral-700 w-11/12 max-w-2xl shadow-lg rounded-md bg-neutral-800" @onclick:stopPropagation="true">
+    <div class="fixed inset-0 backdrop-blur-md bg-black/30 flex items-center justify-center z-50 overflow-y-auto" @onclick="CloseDetailsModal">
+        <div class="bg-gray-900 rounded-2xl p-6 w-11/12 max-w-2xl shadow-2xl border border-neutral-900 my-8 mx-4" @onclick:stopPropagation="true">
             <div class="flex justify-between items-start mb-4">
                 <h3 class="text-lg font-bold text-white">Cash Advance Details</h3>
                 <button @onclick="CloseDetailsModal" class="text-gray-400 hover:text-gray-300">
@@ -187,7 +187,7 @@
             </div>
 
             <div class="mb-4">
-                <div class="p-4 bg-neutral-700 border border-neutral-600 rounded mb-4">
+                <div class="p-4 bg-gray-800 border border-gray-700 rounded-lg mb-4">
                     <p class="text-sm text-gray-400">Amount</p>
                     <p class="text-3xl font-bold text-blue-400">₱@selectedRequest.Amount.ToString("N2")</p>
                 </div>
