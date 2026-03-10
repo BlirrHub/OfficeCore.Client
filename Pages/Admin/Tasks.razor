@@ -1,0 +1,538 @@
+@page "/admin/tasks"
+@attribute [Authorize(Roles = "Admin")]
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Services.Api
+@using OfficeCore.Client.Components.Common
+@using OfficeCore.Client.Components.Forms
+@inject TaskAdminApi TaskAdminApi
+@implements IDisposable
+
+<div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
+    <div class="flex justify-between items-center mb-4 flex-shrink-0">
+        <div>
+            <h1 class="text-xl sm:text-2xl text-white font-bold">Task Management</h1>
+            <p class="text-gray-400 text-xs sm:text-sm mt-1">Create and manage tasks for employees</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+                <svg class="w-4 h-4 animate-pulse text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Auto-refresh active</span>
+            </div>
+            <button @onclick="OpenCreateModal" class="bg-blue-600 text-white px-4 sm:px-6 py-2 rounded-lg hover:bg-blue-700 whitespace-nowrap">
+                + Create Task
+            </button>
+        </div>
+    </div>
+
+    <div class="mb-4 flex gap-4 items-end flex-shrink-0 flex-wrap">
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs text-gray-200 mb-1">Start Date</label>
+            <input type="date" @bind="startDate" class="w-full border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800" />
+        </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs text-gray-200 mb-1">Due Date</label>
+            <input type="date" @bind="endDate" class="w-full border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800" />
+        </div>
+        <div class="flex-1 min-w-[150px]">
+            <label class="block text-xs text-gray-200 mb-1">Priority</label>
+            <select @bind="selectedPriority" class="w-full border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800">
+                <option value="">All Priorities</option>
+                <option value="1">Critical</option>
+                <option value="2">High</option>
+                <option value="3">Normal</option>
+                <option value="4">Low</option>
+            </select>
+        </div>
+        <button @onclick="() => LoadTasks()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            Filter
+        </button>
+    </div>
+
+    <div class="bg-neutral-800 rounded-lg mb-4 flex flex-col flex-1 overflow-hidden">
+        <div class="border-b border-neutral-700 flex-shrink-0">
+            <nav class="flex -mb-px overflow-x-auto">
+                <button @onclick="() => SelectTab(-1)"
+                        class="@(activeTab == -1 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                    All
+                </button>
+                <button @onclick="() => SelectTab(4)"
+                        class="@(activeTab == 4 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                    Pending Completion
+                    @if (pendingCompletionCount > 0)
+                    {
+                        <span class="ml-2 bg-orange-100 text-orange-600 py-0.5 px-2 rounded-full text-xs">@pendingCompletionCount</span>
+                    }
+                </button>
+                <button @onclick="() => SelectTab(5)"
+                        class="@(activeTab == 5 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                    Approved
+                </button>
+                <button @onclick="() => SelectTab(7)"
+                        class="@(activeTab == 7 ? "border-blue-500 text-blue-400" : "border-transparent text-gray-400 hover:text-gray-200 hover:border-gray-600") whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+                    Overdue
+                    @if (overdueCount > 0)
+                    {
+                        <span class="ml-2 bg-red-100 text-red-600 py-0.5 px-2 rounded-full text-xs">@overdueCount</span>
+                    }
+                </button>
+            </nav>
+        </div>
+
+        <div class="p-4 flex-1 overflow-auto">
+            @if (isLoading)
+            {
+                <div class="text-center py-8">
+                    <p class="text-white">Loading tasks...</p>
+                </div>
+            }
+            else if (filteredTasks == null || !filteredTasks.Any())
+            {
+                <div class="text-center py-8">
+                    <p class="text-gray-400">No tasks found.</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full divide-y divide-neutral-500">
+                        <thead class="bg-neutral-900 sticky top-0 z-10">
+                            <tr>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider bg-neutral-950">Title</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Assigned To</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Priority</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Due Date</th>
+                                <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-white uppercase tracking-wider">Status</th>
+                                <th class="px-3 sm:px-6 py-3 text-right text-xs font-bold text-white uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-neutral-600 divide-y divide-neutral-500">
+                            @foreach (var task in filteredTasks)
+                            {
+                                <tr class="hover:bg-neutral-800">
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium text-gray-50 bg-neutral-700">
+                                        <div class="max-w-xs">
+                                            <div class="font-semibold">@task.Title</div>
+                                            <div class="text-gray-400 text-xs truncate mt-1">@task.Description</div>
+                                        </div>
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-200">
+                                        @if (task.AssignmentType == 2)
+                                        {
+                                            <span class="text-blue-400">Task Pool</span>
+                                            @if (!string.IsNullOrEmpty(task.ClaimedByFirstName))
+                                            {
+                                                <div class="text-xs text-gray-400 mt-1">Claimed by @task.ClaimedByName</div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span>@task.AssignedToName</span>
+                                        }
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                                        <PriorityBadge Priority="@task.Priority" PriorityName="@task.PriorityName" />
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-200">
+                                        @if (task.DueDate.HasValue)
+                                        {
+                                            <span class="@(task.IsOverdue ? "text-red-400 font-semibold" : "")">
+                                                @task.DueDate.Value.ToString("MMM dd, yyyy")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-gray-500">No due date</span>
+                                        }
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap">
+                                        <TaskStatusBadge Status="@task.Status" StatusName="@task.StatusName" IsOverdue="@task.IsOverdue" />
+                                    </td>
+                                    <td class="px-3 sm:px-6 py-3 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-right">
+                                        <button @onclick="() => ViewDetails(task.Id)"
+                                                class="text-blue-400 hover:text-blue-300">
+                                            View
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (selectedTask != null)
+{
+    <div class="fixed inset-0 backdrop-blur-md bg-black/30 flex items-center justify-center z-50 overflow-y-auto" @onclick="CloseModal">
+        <div class="bg-gray-900 rounded-2xl p-6 w-11/12 max-w-3xl shadow-2xl border border-neutral-900 my-8 mx-4" @onclick:stopPropagation="true">
+            <div class="flex justify-between items-start mb-4">
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-white mb-2">@selectedTask.Title</h3>
+                    <div class="flex gap-2 items-center">
+                        <PriorityBadge Priority="@selectedTask.Priority" PriorityName="@selectedTask.PriorityName" />
+                        <TaskStatusBadge Status="@selectedTask.Status" StatusName="@selectedTask.StatusName" IsOverdue="@selectedTask.IsOverdue" />
+                    </div>
+                </div>
+                <button @onclick="CloseModal" class="text-gray-400 hover:text-gray-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4 mb-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-1">Description</label>
+                    <p class="text-gray-50 bg-neutral-800 p-3 rounded-lg">@selectedTask.Description</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Created By</label>
+                        <p class="text-gray-50">@selectedTask.CreatedByName</p>
+                        <p class="text-xs text-gray-400">@selectedTask.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Assignment</label>
+                        @if (selectedTask.AssignmentType == 2)
+                        {
+                            <p class="text-blue-400">Task Pool (All Employees)</p>
+                            @if (!string.IsNullOrEmpty(selectedTask.ClaimedByFirstName))
+                            {
+                                <p class="text-gray-50 mt-1">Claimed by: @selectedTask.ClaimedByName</p>
+                                <p class="text-xs text-gray-400">@selectedTask.ClaimedAt?.ToString("MMM dd, yyyy hh:mm tt")</p>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-gray-50">@selectedTask.AssignedToName</p>
+                            @if (!string.IsNullOrEmpty(selectedTask.AssignedToPosition))
+                            {
+                                <p class="text-xs text-gray-400">@selectedTask.AssignedToPosition - @selectedTask.AssignedToDepartment</p>
+                            }
+                        }
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    @if (selectedTask.StartDate.HasValue)
+                    {
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Start Date</label>
+                            <p class="text-gray-50">@selectedTask.StartDate.Value.ToString("MMM dd, yyyy")</p>
+                        </div>
+                    }
+
+                    @if (selectedTask.DueDate.HasValue)
+                    {
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-1">Due Date</label>
+                            <p class="@(selectedTask.IsOverdue ? "text-red-400 font-semibold" : "text-gray-50")">
+                                @selectedTask.DueDate.Value.ToString("MMM dd, yyyy")
+                            </p>
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(selectedTask.CompletionNotes))
+                {
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-1">Completion Notes</label>
+                        <p class="text-gray-50 bg-neutral-800 p-3 rounded-lg">@selectedTask.CompletionNotes</p>
+                        <p class="text-xs text-gray-400 mt-1">Completed: @selectedTask.CompletedAt?.ToString("MMM dd, yyyy hh:mm tt")</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(selectedTask.RejectionNotes))
+                {
+                    <div class="bg-red-900/20 border border-red-700 rounded-lg p-3">
+                        <label class="block text-sm font-medium text-red-300 mb-1">Rejection Notes</label>
+                        <p class="text-gray-50">@selectedTask.RejectionNotes</p>
+                        <p class="text-xs text-gray-400 mt-1">Rejected by @selectedTask.ReviewedByName on @selectedTask.ReviewedAt?.ToString("MMM dd, yyyy hh:mm tt")</p>
+                    </div>
+                }
+
+                @if (selectedTask.Status == 5)
+                {
+                    <div class="bg-green-900/20 border border-green-700 rounded-lg p-3">
+                        <label class="block text-sm font-medium text-green-300 mb-1">Approved</label>
+                        <p class="text-gray-50">Approved by @selectedTask.ReviewedByName</p>
+                        <p class="text-xs text-gray-400 mt-1">@selectedTask.ReviewedAt?.ToString("MMM dd, yyyy hh:mm tt")</p>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(actionMessage))
+                {
+                    <div class="text-sm @(isActionError ? "text-red-400 bg-red-900/20 border border-red-700" : "text-green-400 bg-green-900/20 border border-green-700") rounded-lg p-3">
+                        @actionMessage
+                    </div>
+                }
+            </div>
+
+            <div class="flex gap-2 pt-4 border-t border-neutral-700">
+                @if (selectedTask.Status == 4)
+                {
+                    <button @onclick="ApproveTask"
+                            disabled="@isProcessing"
+                            class="flex-1 bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        @(isProcessing ? "Processing..." : "Approve")
+                    </button>
+                    <button @onclick="ShowRejectInput"
+                            disabled="@isProcessing"
+                            class="flex-1 bg-red-600 text-white rounded-lg py-2 px-4 hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        Reject
+                    </button>
+                }
+                else
+                {
+                    <button @onclick="CloseModal"
+                            class="flex-1 border border-gray-600 rounded-lg py-2 px-4 text-gray-200 hover:bg-gray-800 transition-colors">
+                        Close
+                    </button>
+                }
+            </div>
+
+            @if (showRejectInput)
+            {
+                <div class="mt-4 pt-4 border-t border-neutral-700">
+                    <label class="block text-sm font-medium text-gray-300 mb-2">Rejection Notes (optional)</label>
+                    <textarea @bind="rejectionNotes"
+                              class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[80px]"
+                              placeholder="Provide feedback on why the task is being rejected..."></textarea>
+                    <div class="flex gap-2 mt-3">
+                        <button @onclick="RejectTask"
+                                disabled="@isProcessing"
+                                class="flex-1 bg-red-600 text-white rounded-lg py-2 px-4 hover:bg-red-700 transition-colors disabled:opacity-50">
+                            @(isProcessing ? "Processing..." : "Confirm Rejection")
+                        </button>
+                        <button @onclick="() => showRejectInput = false"
+                                disabled="@isProcessing"
+                                class="flex-1 border border-gray-600 rounded-lg py-2 px-4 text-gray-200 hover:bg-gray-800 transition-colors">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<TaskFormModal IsOpen="isCreateModalOpen" 
+               IsOpenChanged="(isOpen) => isCreateModalOpen = isOpen" 
+               OnTaskCreated="OnTaskCreated" />
+
+@code {
+    private List<TaskDto>? allTasks;
+    private List<TaskDto>? filteredTasks;
+    private TaskDto? selectedTask;
+    
+    private bool isLoading = true;
+    private bool isCreateModalOpen = false;
+    private bool isProcessing = false;
+    private bool showRejectInput = false;
+    
+    private int activeTab = -1;
+    private DateOnly? startDate;
+    private DateOnly? endDate;
+    private string selectedPriority = "";
+    
+    private string? actionMessage;
+    private bool isActionError;
+    private string rejectionNotes = "";
+    
+    private int pendingCompletionCount;
+    private int overdueCount;
+    
+    private PeriodicTimer? refreshTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasks();
+        StartAutoRefresh();
+    }
+
+    private void StartAutoRefresh()
+    {
+        refreshTimer = new PeriodicTimer(TimeSpan.FromSeconds(10));
+        _ = Task.Run(async () =>
+        {
+            while (await refreshTimer.WaitForNextTickAsync())
+            {
+                await InvokeAsync(async () =>
+                {
+                    await LoadTasks(silent: true);
+                    StateHasChanged();
+                });
+            }
+        });
+    }
+
+    private async Task LoadTasks(bool silent = false)
+    {
+        if (!silent) isLoading = true;
+
+        DateOnly? filterStartDate = startDate;
+        DateOnly? filterEndDate = endDate;
+        int? priorityFilter = string.IsNullOrEmpty(selectedPriority) ? null : int.Parse(selectedPriority);
+
+        allTasks = await TaskAdminApi.GetTasksAsync(filterStartDate, filterEndDate, null, priorityFilter);
+        
+        UpdateCounts();
+        FilterTasks();
+
+        if (!silent) isLoading = false;
+    }
+
+    private void UpdateCounts()
+    {
+        if (allTasks == null) return;
+        
+        pendingCompletionCount = allTasks.Count(t => t.Status == 4);
+        overdueCount = allTasks.Count(t => t.IsOverdue && t.Status != 5 && t.Status != 6);
+    }
+
+    private void FilterTasks()
+    {
+        if (allTasks == null)
+        {
+            filteredTasks = null;
+            return;
+        }
+
+        if (activeTab == -1)
+        {
+            filteredTasks = allTasks;
+        }
+        else if (activeTab == 7) // Overdue
+        {
+            filteredTasks = allTasks.Where(t => t.IsOverdue && t.Status != 5 && t.Status != 6).ToList();
+        }
+        else
+        {
+            filteredTasks = allTasks.Where(t => t.Status == activeTab).ToList();
+        }
+    }
+
+    private void SelectTab(int tab)
+    {
+        activeTab = tab;
+        FilterTasks();
+    }
+
+    private async Task ViewDetails(Guid id)
+    {
+        selectedTask = await TaskAdminApi.GetTaskAsync(id);
+        actionMessage = null;
+        isActionError = false;
+        showRejectInput = false;
+        rejectionNotes = "";
+    }
+
+    private void CloseModal()
+    {
+        selectedTask = null;
+        showRejectInput = false;
+        rejectionNotes = "";
+    }
+
+    private void OpenCreateModal()
+    {
+        isCreateModalOpen = true;
+    }
+
+    private async Task OnTaskCreated()
+    {
+        isCreateModalOpen = false;
+        await LoadTasks();
+    }
+
+    private async Task ApproveTask()
+    {
+        if (selectedTask == null) return;
+
+        isProcessing = true;
+        actionMessage = null;
+        isActionError = false;
+
+        try
+        {
+            var result = await TaskAdminApi.ApproveTaskAsync(selectedTask.Id);
+            if (result != null)
+            {
+                actionMessage = "Task approved successfully!";
+                isActionError = false;
+                selectedTask = result;
+                await LoadTasks(silent: true);
+            }
+            else
+            {
+                actionMessage = "Failed to approve task.";
+                isActionError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            actionMessage = $"Error: {ex.Message}";
+            isActionError = true;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void ShowRejectInput()
+    {
+        showRejectInput = true;
+        rejectionNotes = "";
+    }
+
+    private async Task RejectTask()
+    {
+        if (selectedTask == null) return;
+
+        isProcessing = true;
+        actionMessage = null;
+        isActionError = false;
+
+        try
+        {
+            var request = new ReviewTaskRequest { RejectionNotes = rejectionNotes };
+            var result = await TaskAdminApi.RejectTaskAsync(selectedTask.Id, request);
+            
+            if (result != null)
+            {
+                actionMessage = "Task rejected.";
+                isActionError = false;
+                selectedTask = result;
+                showRejectInput = false;
+                rejectionNotes = "";
+                await LoadTasks(silent: true);
+            }
+            else
+            {
+                actionMessage = "Failed to reject task.";
+                isActionError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            actionMessage = $"Error: {ex.Message}";
+            isActionError = true;
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    public void Dispose()
+    {
+        refreshTimer?.Dispose();
+    }
+}
