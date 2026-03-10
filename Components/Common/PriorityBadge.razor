@@ -1,0 +1,19 @@
+@* Priority Badge Component - displays task priority with color coding *@
+
+@code {
+    [Parameter] public int Priority { get; set; }
+    [Parameter] public string PriorityName { get; set; } = string.Empty;
+
+    private string BadgeColor => Priority switch
+    {
+        1 => "bg-red-100 text-red-800",       // Critical
+        2 => "bg-orange-100 text-orange-800", // High
+        3 => "bg-blue-100 text-blue-800",     // Normal
+        4 => "bg-gray-100 text-gray-800",     // Low
+        _ => "bg-gray-100 text-gray-800"
+    };
+}
+
+<span class="px-2 py-1 text-xs font-semibold rounded-full @BadgeColor">
+    @PriorityName
+</span>

@@ -24,6 +24,8 @@ builder.Services.AddScoped<LiquidationAdminApi>();
 builder.Services.AddScoped<CashAdvanceApi>();
 builder.Services.AddScoped<CashAdvanceAdminApi>();
 builder.Services.AddScoped<PettyCashAdminApi>();
+builder.Services.AddScoped<TaskApi>();
+builder.Services.AddScoped<TaskAdminApi>();
 
 var host = builder.Build();
 

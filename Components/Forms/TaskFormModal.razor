@@ -1,0 +1,236 @@
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Components.Common
+@using OfficeCore.Client.Components.Forms
+@using static OfficeCore.Client.Components.Forms.ComboBox<Guid?>
+@inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+@inject OfficeCore.Client.Services.Api.TaskAdminApi TaskAdminApi
+
+<Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Create Task" Size="Modal.ModalSize.Large">
+    <div class="grid grid-cols-1 gap-4">
+        
+        <div>
+            <label class="text-sm text-gray-300 font-medium mb-1 block">Title *</label>
+            <input class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                   placeholder="Task title" 
+                   maxlength="200"
+                   @bind="Request.Title" />
+        </div>
+
+        <div>
+            <label class="text-sm text-gray-300 font-medium mb-1 block">Description *</label>
+            <textarea class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" 
+                      placeholder="Describe the task in detail..." 
+                      maxlength="2000"
+                      @bind="Request.Description"></textarea>
+            <p class="text-xs text-gray-400 mt-1">@Request.Description.Length / 2000 characters</p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+            <div>
+                <label class="text-sm text-gray-300 font-medium mb-1 block">Start Date (Optional)</label>
+                <input type="date" 
+                       class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       value="@(Request.StartDate?.ToString("yyyy-MM-dd"))"
+                       @onchange="@(e => Request.StartDate = DateOnly.TryParse(e.Value?.ToString(), out var d) ? d : null)" />
+            </div>
+            <div>
+                <label class="text-sm text-gray-300 font-medium mb-1 block">Due Date (Optional)</label>
+                <input type="date" 
+                       class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       value="@(Request.DueDate?.ToString("yyyy-MM-dd"))"
+                       @onchange="@(e => Request.DueDate = DateOnly.TryParse(e.Value?.ToString(), out var d) ? d : null)" />
+            </div>
+        </div>
+
+        <div>
+            <label class="text-sm text-gray-300 font-medium mb-1 block">Priority *</label>
+            <select class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    @bind="Request.Priority">
+                <option value="1" class="bg-gray-800">Critical</option>
+                <option value="2" class="bg-gray-800">High</option>
+                <option value="3" class="bg-gray-800" selected>Normal</option>
+                <option value="4" class="bg-gray-800">Low</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="text-sm text-gray-300 font-medium mb-1 block">Assignment Type *</label>
+            <select class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    @bind="Request.AssignmentType"
+                    @bind:after="OnAssignmentTypeChanged">
+                <option value="1" class="bg-gray-800" selected>Assign to Individual</option>
+                <option value="2" class="bg-gray-800">Open to All Employees (Task Pool)</option>
+            </select>
+        </div>
+
+        @if (Request.AssignmentType == 1)
+        {
+            <ComboBox TValue="Guid?"
+                      Label="Assign to Employee *"
+                      Placeholder="Select employee..."
+                      @bind-Value="Request.AssignedToUserId"
+                      Options="@employeeOptions" />
+        }
+        else
+        {
+            <div class="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
+                <p class="text-sm text-blue-300">
+                    <strong>Task Pool:</strong> This task will be visible to all employees. They can claim it on a first-come, first-served basis.
+                </p>
+            </div>
+        }
+
+        @if (!string.IsNullOrWhiteSpace(Message))
+        {
+            <div class="text-sm @(IsError ? "text-red-400" : "text-green-400") bg-gray-800 border @(IsError ? "border-red-700" : "border-green-700") rounded-lg p-3">
+                @Message
+            </div>
+        }
+
+        <div class="flex gap-2 pt-2">
+            <button class="bg-blue-600 text-white rounded-lg py-2 px-4 flex-1 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    @onclick="CreateTask"
+                    disabled="@IsSubmitting">
+                @(IsSubmitting ? "Creating..." : "Create Task")
+            </button>
+            <button class="border border-gray-600 rounded-lg py-2 px-4 text-gray-200 hover:bg-gray-800 transition-colors"
+                    @onclick="Cancel"
+                    disabled="@IsSubmitting">
+                Cancel
+            </button>
+        </div>
+    </div>
+</Modal>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback<bool> IsOpenChanged { get; set; }
+    [Parameter] public EventCallback OnTaskCreated { get; set; }
+
+    private CreateTaskRequest Request = new() { Priority = 3, AssignmentType = 1 };
+    private List<ComboBoxOption<Guid?>> employeeOptions = new();
+    
+    private string? Message;
+    private bool IsError;
+    private bool IsSubmitting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadEmployees();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IsOpen && employeeOptions.Count == 0)
+        {
+            await LoadEmployees();
+        }
+    }
+
+    private async Task LoadEmployees()
+    {
+        var employees = await AdminApi.GetAllEmployeesAsync();
+        if (employees != null)
+        {
+            employeeOptions = employees
+                .Select(e => new ComboBoxOption<Guid?>
+                {
+                    Value = e.Id,
+                    Text = $"{e.FirstName} {e.LastName} - {e.Position ?? "No Position"}"
+                })
+                .OrderBy(o => o.Text)
+                .ToList();
+        }
+    }
+
+    private void OnAssignmentTypeChanged()
+    {
+        // Clear assigned user if switching to "All Employees"
+        if (Request.AssignmentType == 2)
+        {
+            Request.AssignedToUserId = null;
+        }
+    }
+
+    private async Task CreateTask()
+    {
+        Message = null;
+        IsError = false;
+
+        // Validation
+        if (string.IsNullOrWhiteSpace(Request.Title) || Request.Title.Length < 1)
+        {
+            Message = "Title is required.";
+            IsError = true;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Request.Description) || Request.Description.Length < 10)
+        {
+            Message = "Description must be at least 10 characters.";
+            IsError = true;
+            return;
+        }
+
+        if (Request.StartDate.HasValue && Request.DueDate.HasValue && Request.StartDate.Value > Request.DueDate.Value)
+        {
+            Message = "Start date must be before or equal to due date.";
+            IsError = true;
+            return;
+        }
+
+        if (Request.AssignmentType == 1 && !Request.AssignedToUserId.HasValue)
+        {
+            Message = "Please select an employee to assign this task to.";
+            IsError = true;
+            return;
+        }
+
+        IsSubmitting = true;
+
+        try
+        {
+            var result = await TaskAdminApi.CreateTaskAsync(Request);
+            
+            if (result != null)
+            {
+                Message = "Task created successfully!";
+                IsError = false;
+                
+                // Reset form
+                Request = new() { Priority = 3, AssignmentType = 1 };
+                
+                await Task.Delay(1000);
+                await OnTaskCreated.InvokeAsync();
+                await Close();
+            }
+            else
+            {
+                Message = "Failed to create task. Please try again.";
+                IsError = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Message = $"Error: {ex.Message}";
+            IsError = true;
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        Request = new() { Priority = 3, AssignmentType = 1 };
+        Message = null;
+        IsError = false;
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        await IsOpenChanged.InvokeAsync(false);
+    }
+}

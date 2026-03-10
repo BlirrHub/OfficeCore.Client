@@ -1,0 +1,47 @@
+@* Task Status Badge Component - displays task status with color coding *@
+
+@code {
+    [Parameter] public int Status { get; set; }
+    [Parameter] public string StatusName { get; set; } = string.Empty;
+    [Parameter] public bool IsOverdue { get; set; }
+
+    private string BadgeColor
+    {
+        get
+        {
+            // If overdue, show red regardless of status
+            if (IsOverdue && Status is 1 or 2 or 3) // Pending, Claimed, InProgress
+            {
+                return "bg-red-100 text-red-800";
+            }
+
+            return Status switch
+            {
+                1 => "bg-yellow-100 text-yellow-800",  // Pending
+                2 => "bg-blue-100 text-blue-800",      // Claimed
+                3 => "bg-purple-100 text-purple-800",  // InProgress
+                4 => "bg-orange-100 text-orange-800",  // Completed (awaiting review)
+                5 => "bg-green-100 text-green-800",    // Approved
+                6 => "bg-red-100 text-red-800",        // Rejected
+                7 => "bg-red-100 text-red-800",        // Overdue
+                _ => "bg-gray-100 text-gray-800"
+            };
+        }
+    }
+
+    private string DisplayText
+    {
+        get
+        {
+            if (IsOverdue && Status is 1 or 2 or 3)
+            {
+                return "Overdue";
+            }
+            return StatusName;
+        }
+    }
+}
+
+<span class="px-2 py-1 text-xs font-semibold rounded-full @BadgeColor">
+    @DisplayText
+</span>
