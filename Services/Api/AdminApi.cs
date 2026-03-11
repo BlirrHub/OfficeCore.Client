@@ -217,4 +217,19 @@ public class AdminApi
 
         return await response.Content.ReadFromJsonAsync<AttendanceImportBatchDto>();
     }
+
+    public async Task<DashboardStatsDto?> GetDashboardStatsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync("api/admin/dashboard-stats");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<DashboardStatsDto>();
+    }
 }
