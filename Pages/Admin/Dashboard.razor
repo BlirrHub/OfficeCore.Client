@@ -1,4 +1,5 @@
 @page "/admin/dashboard"
+@using System.Linq
 @using OfficeCore.Client.Models.Dtos
 @inject NavigationManager Nav
 @inject OfficeCore.Client.Services.State.AuthState AuthState
@@ -10,175 +11,367 @@
 }
 else
 {
-    <div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col overflow-auto">
-        <!-- Header -->
-        <div class="mb-4 flex-shrink-0">
-            <h1 class="text-xl sm:text-2xl text-white font-bold">Dashboard</h1>
-            <p class="text-gray-400 text-xs sm:text-sm mt-1">Welcome back! Here's your overview</p>
-        </div>
-
+    <div class="flex h-[calc(100vh-120px)] flex-col overflow-auto rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5">
         @if (isLoading)
         {
-            <div class="flex items-center justify-center h-64">
-                <div class="flex flex-col items-center gap-3">
-                    <svg class="animate-spin h-10 w-10 text-blue-500" fill="none" viewBox="0 0 24 24">
+            <div class="flex h-full items-center justify-center">
+                <div class="flex flex-col items-center gap-3 text-center">
+                    <svg class="h-10 w-10 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span class="text-gray-400">Loading dashboard...</span>
+                    <div>
+                        <p class="text-base font-semibold text-white">Loading operations dashboard</p>
+                        <p class="text-sm text-neutral-400">Pulling live admin metrics.</p>
+                    </div>
                 </div>
             </div>
         }
         else if (stats == null)
         {
-            <div class="flex items-center justify-center h-64">
-                <div class="text-center">
-                    <p class="text-red-400 mb-2">Failed to load dashboard stats</p>
-                    <button @onclick="LoadDashboardStats" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                        Retry
+            <div class="flex h-full items-center justify-center">
+                <div class="max-w-sm rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-center">
+                    <p class="text-base font-semibold text-red-300">Dashboard data is unavailable</p>
+                    <p class="mt-2 text-sm text-neutral-400">The admin summary endpoint did not return data.</p>
+                    <button @onclick="LoadDashboardStats" class="mt-5 rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800">
+                        Try again
                     </button>
                 </div>
             </div>
         }
         else
         {
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                <!-- Total Employees Card -->
-                <div class="bg-neutral-800 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-750 transition-colors cursor-pointer"
-                     @onclick='() => Nav.NavigateTo("/admin/employees")'>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-400 text-xs sm:text-sm mb-1">Total Employees</p>
-                            <p class="text-2xl sm:text-3xl font-bold text-white">@stats.TotalEmployees</p>
-                            <p class="text-green-400 text-xs mt-2">@stats.ActiveEmployees active</p>
+            <section class="rounded-3xl border border-neutral-800 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.16),_transparent_30%),linear-gradient(135deg,_rgba(23,23,23,0.98),_rgba(10,10,10,1))] p-4 sm:p-6">
+                <div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+                    <div class="max-w-3xl">
+                        <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-amber-300">
+                            Admin Operations Center
                         </div>
-                        <div class="text-4xl">👥</div>
+                        <h1 class="text-2xl font-semibold tracking-tight text-white sm:text-4xl">Team health, approvals, and workload in one view.</h1>
+                        <p class="mt-3 max-w-2xl text-sm leading-6 text-neutral-300 sm:text-base">
+                            Focus on staffing balance, finance approvals, and task pressure before moving into the detailed admin modules.
+                        </p>
+                    </div>
+
+                    <div class="grid gap-3 sm:grid-cols-3 lg:min-w-[420px] lg:max-w-[520px] lg:flex-1">
+                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                            <p class="text-xs uppercase tracking-[0.18em] text-neutral-400">Active rate</p>
+                            <p class="mt-2 text-2xl font-semibold text-white">@GetActiveRateText()</p>
+                            <p class="mt-1 text-xs text-emerald-300">@stats.ActiveEmployees active out of @stats.TotalEmployees</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                            <p class="text-xs uppercase tracking-[0.18em] text-neutral-400">Action queue</p>
+                            <p class="mt-2 text-2xl font-semibold text-white">@GetTotalActionItems()</p>
+                            <p class="mt-1 text-xs text-amber-300">@GetQueueSummary()</p>
+                        </div>
+                        <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+                            <p class="text-xs uppercase tracking-[0.18em] text-neutral-400">Largest team</p>
+                            <p class="mt-2 text-lg font-semibold text-white">@GetTopDepartmentName()</p>
+                            <p class="mt-1 text-xs text-sky-300">@GetTopDepartmentCountText()</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Pending Cash Advances Card -->
-                <div class="bg-neutral-800 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-750 transition-colors cursor-pointer"
-                     @onclick='() => Nav.NavigateTo("/admin/cash-advances")'>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-400 text-xs sm:text-sm mb-1">Pending Cash Advances</p>
-                            <p class="text-2xl sm:text-3xl font-bold text-white">@stats.PendingCashAdvances</p>
-                            <p class="text-yellow-400 text-xs mt-2">Needs approval</p>
-                        </div>
-                        <div class="text-4xl">💰</div>
-                    </div>
+                <div class="mt-5 flex flex-wrap items-center gap-2 text-xs text-neutral-300">
+                    <span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">Pending cash advances: @stats.PendingCashAdvances</span>
+                    <span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">Pending liquidations: @stats.PendingLiquidations</span>
+                    <span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">Open tasks: @stats.PendingTasks</span>
+                    <span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">High priority: @stats.HighPriorityTasks</span>
+                    @if (lastLoadedAt.HasValue)
+                    {
+                        <span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">Updated @lastLoadedAt.Value.ToString("MMM dd, h:mm tt")</span>
+                    }
                 </div>
+            </section>
 
-                <!-- Pending Liquidations Card -->
-                <div class="bg-neutral-800 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-750 transition-colors cursor-pointer"
-                     @onclick='() => Nav.NavigateTo("/admin/daily-liquidations")'>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-400 text-xs sm:text-sm mb-1">Pending Liquidations</p>
-                            <p class="text-2xl sm:text-3xl font-bold text-white">@stats.PendingLiquidations</p>
-                            <p class="text-yellow-400 text-xs mt-2">Awaiting review</p>
+            <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.95fr)]">
+                <div class="grid gap-4">
+                    <section class="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+                        <button class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-emerald-500/40 hover:bg-neutral-900/90"
+                                @onclick='() => Nav.NavigateTo("/admin/employees")'>
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Workforce</p>
+                                    <p class="mt-3 text-3xl font-semibold text-white">@stats.TotalEmployees</p>
+                                </div>
+                                <div class="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 p-3 text-emerald-300">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M17 20h5V4H2v16h5m10 0v-2a4 4 0 00-4-4H11a4 4 0 00-4 4v2m10 0H7m5-7a3 3 0 100-6 3 3 0 000 6z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="mt-5 flex items-center justify-between text-sm">
+                                <span class="text-emerald-300">@stats.ActiveEmployees active</span>
+                                <span class="text-neutral-500">@stats.InactiveEmployees inactive</span>
+                            </div>
+                            <div class="mt-3 h-2 overflow-hidden rounded-full bg-neutral-800">
+                                <div class="h-full rounded-full bg-emerald-400" style="width: @GetActiveRateStyle()"></div>
+                            </div>
+                        </button>
+
+                        <button class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-amber-500/40 hover:bg-neutral-900/90"
+                                @onclick='() => Nav.NavigateTo("/admin/cash-advances")'>
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Cash approvals</p>
+                                    <p class="mt-3 text-3xl font-semibold text-white">@stats.PendingCashAdvances</p>
+                                </div>
+                                <div class="rounded-2xl border border-amber-400/20 bg-amber-400/10 p-3 text-amber-300">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 8c-2.21 0-4 1.119-4 2.5S9.79 13 12 13s4 1.119 4 2.5S14.21 18 12 18s-4-1.119-4-2.5M12 6v12m9-6a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="mt-5 text-sm text-neutral-400">Requests waiting for finance or admin sign-off.</p>
+                        </button>
+
+                        <button class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-sky-500/40 hover:bg-neutral-900/90"
+                                @onclick='() => Nav.NavigateTo("/admin/daily-liquidations")'>
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Liquidations</p>
+                                    <p class="mt-3 text-3xl font-semibold text-white">@stats.PendingLiquidations</p>
+                                </div>
+                                <div class="rounded-2xl border border-sky-400/20 bg-sky-400/10 p-3 text-sky-300">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <p class="mt-5 text-sm text-neutral-400">Expense reports that still need validation and closure.</p>
+                        </button>
+
+                        <button class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-rose-500/40 hover:bg-neutral-900/90"
+                                @onclick='() => Nav.NavigateTo("/admin/tasks")'>
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Task load</p>
+                                    <p class="mt-3 text-3xl font-semibold text-white">@stats.PendingTasks</p>
+                                </div>
+                                <div class="rounded-2xl border border-rose-400/20 bg-rose-400/10 p-3 text-rose-300">
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="mt-5 flex items-center justify-between text-sm">
+                                <span class="text-rose-300">@stats.HighPriorityTasks high priority</span>
+                                <span class="text-neutral-500">needs triage</span>
+                            </div>
+                        </button>
+                    </section>
+
+                    <section class="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+                        <div class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Action lanes</p>
+                                    <h2 class="mt-2 text-xl font-semibold text-white">Where admin attention should go next</h2>
+                                </div>
+                                <button @onclick="LoadDashboardStats" class="rounded-xl border border-neutral-700 px-3 py-2 text-sm text-neutral-200 transition hover:bg-neutral-800">
+                                    Refresh
+                                </button>
+                            </div>
+
+                            <div class="mt-5 grid gap-3 md:grid-cols-3">
+                                <button class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-left transition hover:border-emerald-500/30 hover:bg-neutral-900"
+                                        @onclick='() => Nav.NavigateTo("/admin/employees")'>
+                                    <p class="text-sm font-medium text-white">Staffing</p>
+                                    <p class="mt-2 text-xs leading-5 text-neutral-400">Review employee records, activate accounts, and balance departments.</p>
+                                    <p class="mt-4 text-xs text-emerald-300">@GetTopDepartmentCountText()</p>
+                                </button>
+
+                                <button class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-left transition hover:border-amber-500/30 hover:bg-neutral-900"
+                                        @onclick='() => Nav.NavigateTo("/admin/attendance-weekly")'>
+                                    <p class="text-sm font-medium text-white">Attendance</p>
+                                    <p class="mt-2 text-xs leading-5 text-neutral-400">Inspect weekly punches and clean up records before payroll processing.</p>
+                                    <p class="mt-4 text-xs text-amber-300">Keep time entries ready for payroll.</p>
+                                </button>
+
+                                <button class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 text-left transition hover:border-rose-500/30 hover:bg-neutral-900"
+                                        @onclick='() => Nav.NavigateTo("/admin/tasks")'>
+                                    <p class="text-sm font-medium text-white">Tasks</p>
+                                    <p class="mt-2 text-xs leading-5 text-neutral-400">Resolve overdue work and escalate high-priority items early.</p>
+                                    <p class="mt-4 text-xs text-rose-300">@stats.HighPriorityTasks high-priority items open.</p>
+                                </button>
+                            </div>
                         </div>
-                        <div class="text-4xl">📄</div>
-                    </div>
-                </div>
 
-                <!-- Open Tasks Card -->
-                <div class="bg-neutral-800 rounded-lg border border-neutral-700 p-4 hover:bg-neutral-750 transition-colors cursor-pointer"
-                     @onclick='() => Nav.NavigateTo("/admin/tasks")'>
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-400 text-xs sm:text-sm mb-1">Open Tasks</p>
-                            <p class="text-2xl sm:text-3xl font-bold text-white">@stats.PendingTasks</p>
-                            <p class="text-red-400 text-xs mt-2">@stats.HighPriorityTasks high priority</p>
+                        <div class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                            <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Queue balance</p>
+                            <h2 class="mt-2 text-xl font-semibold text-white">Approval load</h2>
+
+                            <div class="mt-5 space-y-4">
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between text-sm">
+                                        <span class="text-neutral-300">Cash advances</span>
+                                        <span class="font-medium text-white">@stats.PendingCashAdvances</span>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-neutral-800">
+                                        <div class="h-2 rounded-full bg-amber-400" style="width: @GetShareWidth(stats.PendingCashAdvances)"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between text-sm">
+                                        <span class="text-neutral-300">Liquidations</span>
+                                        <span class="font-medium text-white">@stats.PendingLiquidations</span>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-neutral-800">
+                                        <div class="h-2 rounded-full bg-sky-400" style="width: @GetShareWidth(stats.PendingLiquidations)"></div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <div class="mb-2 flex items-center justify-between text-sm">
+                                        <span class="text-neutral-300">Tasks</span>
+                                        <span class="font-medium text-white">@stats.PendingTasks</span>
+                                    </div>
+                                    <div class="h-2 rounded-full bg-neutral-800">
+                                        <div class="h-2 rounded-full bg-rose-400" style="width: @GetShareWidth(stats.PendingTasks)"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Priority signal</p>
+                                <p class="mt-2 text-base font-medium text-white">@GetPriorityHeadline()</p>
+                                <p class="mt-1 text-sm text-neutral-400">@GetPriorityDescription()</p>
+                            </div>
                         </div>
-                        <div class="text-4xl">✓</div>
-                    </div>
-                </div>
-            </div>
+                    </section>
 
-            <!-- Main Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1">
-                <!-- Recent Activity -->
-                <div class="lg:col-span-2 bg-neutral-800 rounded-lg border border-neutral-700 p-4 flex flex-col">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-semibold text-white">Recent Activity</h2>
-                    </div>
-                    <div class="space-y-3 overflow-auto flex-1">
+                    <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Recent events</p>
+                                <h2 class="mt-2 text-xl font-semibold text-white">Activity timeline</h2>
+                            </div>
+                            <button class="text-sm text-neutral-400 transition hover:text-white" @onclick='() => Nav.NavigateTo("/admin/tasks")'>
+                                Open tasks
+                            </button>
+                        </div>
+
                         @if (stats.RecentActivities.Count == 0)
                         {
-                            <div class="text-center text-gray-500 py-8">
-                                <p>No recent activity</p>
+                            <div class="mt-6 rounded-2xl border border-dashed border-neutral-700 bg-neutral-950 px-4 py-10 text-center text-sm text-neutral-500">
+                                No recent activity has been recorded yet.
                             </div>
                         }
                         else
                         {
-                            @foreach (var activity in stats.RecentActivities)
-                            {
-                                <div class="flex items-start gap-3 p-3 bg-neutral-700 rounded-lg border border-neutral-600 hover:bg-neutral-650">
-                                    <div class="text-2xl">@activity.Icon</div>
-                                    <div class="flex-1">
-                                        <p class="text-sm text-white">@activity.Title</p>
-                                        <p class="text-xs text-gray-400 mt-1">@activity.Description</p>
-                                        <p class="text-xs text-gray-500 mt-1">@activity.RelativeTime</p>
-                                    </div>
-                                </div>
-                            }
-                        }
-                    </div>
-                </div>
-
-                <!-- Quick Actions & Stats -->
-                <div class="flex flex-col gap-4">
-                    <!-- Quick Actions -->
-                    <div class="bg-neutral-800 rounded-lg border border-neutral-700 p-4">
-                        <h2 class="text-lg font-semibold text-white mb-4">Quick Actions</h2>
-                        <div class="space-y-2">
-                            <button @onclick='() => Nav.NavigateTo("/admin/employees")' 
-                                    class="w-full bg-black text-white px-4 py-3 rounded-lg text-sm hover:bg-gray-800 border border-neutral-600 text-left flex items-center justify-between">
-                                <span>Manage Employees</span>
-                                <span>→</span>
-                            </button>
-                            <button @onclick='() => Nav.NavigateTo("/admin/attendance-weekly")' 
-                                    class="w-full bg-black text-white px-4 py-3 rounded-lg text-sm hover:bg-gray-800 border border-neutral-600 text-left flex items-center justify-between">
-                                <span>View Attendance</span>
-                                <span>→</span>
-                            </button>
-                            <button @onclick='() => Nav.NavigateTo("/admin/payroll-weekly")' 
-                                    class="w-full bg-black text-white px-4 py-3 rounded-lg text-sm hover:bg-gray-800 border border-neutral-600 text-left flex items-center justify-between">
-                                <span>Process Payroll</span>
-                                <span>→</span>
-                            </button>
-                            <button @onclick='() => Nav.NavigateTo("/admin/settings")' 
-                                    class="w-full bg-black text-white px-4 py-3 rounded-lg text-sm hover:bg-gray-800 border border-neutral-600 text-left flex items-center justify-between">
-                                <span>Settings</span>
-                                <span>→</span>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Department Stats -->
-                    @if (stats.DepartmentStats.Count > 0)
-                    {
-                        <div class="bg-neutral-800 rounded-lg border border-neutral-700 p-4">
-                            <h2 class="text-lg font-semibold text-white mb-4">By Department</h2>
-                            <div class="space-y-3">
-                                @foreach (var dept in stats.DepartmentStats)
+                            <div class="mt-6 space-y-3">
+                                @for (var index = 0; index < stats.RecentActivities.Count; index++)
                                 {
-                                    <div>
-                                        <div class="flex justify-between text-sm mb-1">
-                                            <span class="text-gray-300">@dept.Department</span>
-                                            <span class="text-white font-semibold">@dept.EmployeeCount</span>
+                                    var activity = stats.RecentActivities[index];
+
+                                    <div class="grid gap-3 rounded-2xl border border-neutral-800 p-4 sm:grid-cols-[56px_minmax(0,1fr)] @GetActivityCardTone(index)">
+                                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-black/20 text-2xl">
+                                            @activity.Icon
                                         </div>
-                                        <div class="w-full bg-neutral-700 rounded-full h-2">
-                                            <div class="@GetDepartmentColor(dept.Department) h-2 rounded-full" 
-                                                 style="width: @(dept.Percentage)%"></div>
+                                        <div class="min-w-0">
+                                            <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                <div>
+                                                    <p class="text-base font-medium text-white">@activity.Title</p>
+                                                    <p class="mt-1 text-sm leading-6 text-neutral-300">@activity.Description</p>
+                                                </div>
+                                                <div class="text-xs uppercase tracking-[0.14em] text-neutral-500">@activity.RelativeTime</div>
+                                            </div>
                                         </div>
                                     </div>
                                 }
                             </div>
+                        }
+                    </section>
+                </div>
+
+                <div class="grid content-start gap-4">
+                    <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                        <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Workforce snapshot</p>
+                        <h2 class="mt-2 text-xl font-semibold text-white">Current headcount state</h2>
+
+                        <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Active employees</p>
+                                <p class="mt-2 text-2xl font-semibold text-white">@stats.ActiveEmployees</p>
+                                <p class="mt-1 text-sm text-emerald-300">Ready for day-to-day operations</p>
+                            </div>
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Inactive employees</p>
+                                <p class="mt-2 text-2xl font-semibold text-white">@stats.InactiveEmployees</p>
+                                <p class="mt-1 text-sm text-neutral-400">Accounts or staffing records needing review</p>
+                            </div>
                         </div>
-                    }
+
+                        <div class="mt-5 rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                            <div class="flex items-center justify-between gap-4 text-sm">
+                                <span class="text-neutral-300">Team readiness</span>
+                                <span class="font-medium text-white">@GetActiveRateText()</span>
+                            </div>
+                            <div class="mt-3 h-2 rounded-full bg-neutral-800">
+                                <div class="h-2 rounded-full bg-gradient-to-r from-emerald-500 to-lime-300" style="width: @GetActiveRateStyle()"></div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                        <div class="flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Department coverage</p>
+                                <h2 class="mt-2 text-xl font-semibold text-white">Headcount by department</h2>
+                            </div>
+                            <button class="text-sm text-neutral-400 transition hover:text-white" @onclick='() => Nav.NavigateTo("/admin/organization")'>
+                                Open org
+                            </button>
+                        </div>
+
+                        @if (stats.DepartmentStats.Count == 0)
+                        {
+                            <div class="mt-6 rounded-2xl border border-dashed border-neutral-700 bg-neutral-950 px-4 py-10 text-center text-sm text-neutral-500">
+                                No department distribution is available yet.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mt-6 space-y-4">
+                                @for (var index = 0; index < stats.DepartmentStats.Count; index++)
+                                {
+                                    var department = stats.DepartmentStats[index];
+
+                                    <div>
+                                        <div class="mb-2 flex items-center justify-between gap-3 text-sm">
+                                            <div class="min-w-0">
+                                                <p class="truncate font-medium text-white">@department.Department</p>
+                                                <p class="text-xs text-neutral-500">@GetDepartmentPercentageText(department)</p>
+                                            </div>
+                                            <span class="rounded-full border border-neutral-700 px-2.5 py-1 text-xs text-neutral-200">@department.EmployeeCount</span>
+                                        </div>
+                                        <div class="h-2 rounded-full bg-neutral-800">
+                                            <div class="h-2 rounded-full @GetDepartmentTone(index)" style="width: @GetDepartmentWidth(department)"></div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                        <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Quick actions</p>
+                        <h2 class="mt-2 text-xl font-semibold text-white">Jump directly into admin work</h2>
+
+                        <div class="mt-5 grid gap-3">
+                            <button @onclick='() => Nav.NavigateTo("/admin/clients")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Manage clients</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                            <button @onclick='() => Nav.NavigateTo("/admin/payroll-weekly")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Process payroll</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                            <button @onclick='() => Nav.NavigateTo("/admin/settings")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Review settings</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                        </div>
+                    </section>
                 </div>
             </div>
         }
@@ -188,6 +381,7 @@ else
 @code {
     private DashboardStatsDto? stats;
     private bool isLoading = true;
+    private DateTime? lastLoadedAt;
 
     protected override async Task OnInitializedAsync()
     {
@@ -198,18 +392,180 @@ else
     {
         isLoading = true;
         stats = await AdminApi.GetDashboardStatsAsync();
+        lastLoadedAt = DateTime.Now;
         isLoading = false;
     }
 
-    private string GetDepartmentColor(string department)
+    private int GetTotalActionItems()
     {
-        // Assign colors based on department name hash for consistency
-        var colors = new[] { "bg-blue-500", "bg-green-500", "bg-purple-500", "bg-yellow-500", "bg-red-500", "bg-pink-500", "bg-indigo-500" };
-        var hash = Math.Abs(department.GetHashCode());
-        return colors[hash % colors.Length];
-    }
-}
+        if (stats == null)
+        {
+            return 0;
+        }
 
-@code {
-    
+        return stats.PendingCashAdvances + stats.PendingLiquidations + stats.PendingTasks;
+    }
+
+    private string GetQueueSummary()
+    {
+        if (stats == null)
+        {
+            return "No open actions";
+        }
+
+        if (GetTotalActionItems() == 0)
+        {
+            return "Queues are currently clear";
+        }
+
+        if (stats.HighPriorityTasks > 0)
+        {
+            return $"{stats.HighPriorityTasks} high-priority tasks need attention";
+        }
+
+        return "Operations are waiting on review";
+    }
+
+    private string GetPriorityHeadline()
+    {
+        if (stats == null)
+        {
+            return "Dashboard not ready";
+        }
+
+        if (stats.HighPriorityTasks >= 5)
+        {
+            return "Urgent task pressure is building.";
+        }
+
+        if (GetTotalActionItems() >= 10)
+        {
+            return "Approval queues are starting to stack up.";
+        }
+
+        if (GetTotalActionItems() == 0)
+        {
+            return "Queues are clear right now.";
+        }
+
+        return "Workload is active but still manageable.";
+    }
+
+    private string GetPriorityDescription()
+    {
+        if (stats == null)
+        {
+            return "Refresh the page to retry loading admin metrics.";
+        }
+
+        if (stats.HighPriorityTasks >= 5)
+        {
+            return "Resolve urgent tasks first, then clear financial approvals to avoid carryover.";
+        }
+
+        if (GetTotalActionItems() >= 10)
+        {
+            return "Spread review effort across liquidations, cash advances, and tasks before end of day.";
+        }
+
+        if (GetTotalActionItems() == 0)
+        {
+            return "Use this window to clean up employee records and settings.";
+        }
+
+        return "The queue is moving. Focus on high-value reviews first.";
+    }
+
+    private string GetActiveRateText()
+    {
+        if (stats == null || stats.TotalEmployees == 0)
+        {
+            return "0%";
+        }
+
+        var rate = (decimal)stats.ActiveEmployees / stats.TotalEmployees * 100m;
+        return $"{Math.Round(rate, 1):0.#}%";
+    }
+
+    private string GetActiveRateStyle()
+    {
+        if (stats == null || stats.TotalEmployees == 0)
+        {
+            return "0%";
+        }
+
+        var rate = (double)stats.ActiveEmployees / stats.TotalEmployees * 100d;
+        return $"{Math.Clamp(rate, 0d, 100d):0.##}%";
+    }
+
+    private string GetTopDepartmentName()
+    {
+        return stats?.DepartmentStats
+            .OrderByDescending(department => department.EmployeeCount)
+            .Select(department => department.Department)
+            .FirstOrDefault() ?? "Unassigned";
+    }
+
+    private string GetTopDepartmentCountText()
+    {
+        var topDepartment = stats?.DepartmentStats.OrderByDescending(department => department.EmployeeCount).FirstOrDefault();
+
+        if (topDepartment == null)
+        {
+            return "No department data available";
+        }
+
+        return $"{topDepartment.EmployeeCount} employees in {topDepartment.Department}";
+    }
+
+    private string GetShareWidth(int count)
+    {
+        var total = GetTotalActionItems();
+
+        if (total == 0)
+        {
+            return "0%";
+        }
+
+        var width = (double)count / total * 100d;
+        return $"{Math.Clamp(width, 6d, 100d):0.##}%";
+    }
+
+    private string GetDepartmentWidth(DepartmentStat department)
+    {
+        var width = Math.Clamp((double)department.Percentage, 0d, 100d);
+        return $"{width:0.##}%";
+    }
+
+    private string GetDepartmentPercentageText(DepartmentStat department)
+    {
+        return $"{department.Percentage:0.#}% of total workforce";
+    }
+
+    private string GetDepartmentTone(int index)
+    {
+        var tones = new[]
+        {
+            "bg-emerald-400",
+            "bg-sky-400",
+            "bg-amber-400",
+            "bg-fuchsia-400",
+            "bg-rose-400",
+            "bg-cyan-400"
+        };
+
+        return tones[index % tones.Length];
+    }
+
+    private string GetActivityCardTone(int index)
+    {
+        var tones = new[]
+        {
+            "bg-gradient-to-r from-neutral-900 to-neutral-950",
+            "bg-gradient-to-r from-neutral-900 to-neutral-900/80",
+            "bg-gradient-to-r from-neutral-950 to-neutral-900"
+        };
+
+        return tones[index % tones.Length];
+    }
 }
