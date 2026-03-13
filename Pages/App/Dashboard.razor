@@ -1,1 +1,279 @@
 @page "/app/dashboard"
+@attribute [Authorize(Roles = "Employee")]
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Services.Api
+@inject TaskApi TaskApi
+@inject CashAdvanceApi CashAdvanceApi
+@inject LiquidationApi LiquidationApi
+@inject NotificationApi NotificationApi
+@inject AuthApi AuthApi
+@inject NavigationManager Nav
+
+<div class="flex h-[calc(100vh-120px)] flex-col overflow-auto rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5">
+	@if (isLoading)
+	{
+		<div class="flex h-full items-center justify-center">
+			<div class="flex flex-col items-center gap-3 text-center">
+				<svg class="h-10 w-10 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
+					<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+					<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+				</svg>
+				<p class="text-sm text-neutral-400">Loading your workspace dashboard...</p>
+			</div>
+		</div>
+	}
+	else
+	{
+		<section class="rounded-3xl border border-neutral-800 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.12),_transparent_32%),linear-gradient(135deg,_rgba(23,23,23,0.98),_rgba(10,10,10,1))] p-4 sm:p-6">
+			<div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+				<div class="max-w-3xl">
+					<div class="mb-3 inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-amber-300">
+						Employee Command View
+					</div>
+					<h1 class="text-2xl font-semibold tracking-tight text-white sm:text-4xl">Good to have you back, @GetFirstNameOrFallback().</h1>
+					<p class="mt-3 max-w-2xl text-sm leading-6 text-neutral-300 sm:text-base">
+						Track your tasks, cash advances, and liquidations from one place and jump directly into pending work.
+					</p>
+				</div>
+
+				<div class="grid gap-3 sm:grid-cols-3 lg:min-w-[420px] lg:max-w-[520px] lg:flex-1">
+					<div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+						<p class="text-xs uppercase tracking-[0.18em] text-neutral-400">Open tasks</p>
+						<p class="mt-2 text-2xl font-semibold text-white">@GetOpenTaskCount()</p>
+						<p class="mt-1 text-xs text-rose-300">@GetOverdueTaskCount() overdue</p>
+					</div>
+					<div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+						<p class="text-xs uppercase tracking-[0.18em] text-neutral-400">Pending approvals</p>
+						<p class="mt-2 text-2xl font-semibold text-white">@GetPendingApprovalsCount()</p>
+						<p class="mt-1 text-xs text-amber-300">cash advance + liquidation queues</p>
+					</div>
+					<div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
+						<p class="text-xs uppercase tracking-[0.18em] text-neutral-400">Unread alerts</p>
+						<p class="mt-2 text-2xl font-semibold text-white">@notificationsUnreadCount</p>
+						<p class="mt-1 text-xs text-sky-300">stay on top of reviews</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="mt-5 flex flex-wrap items-center gap-2 text-xs text-neutral-300">
+				<span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">My tasks: @myTasks.Count</span>
+				<span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">My cash advances: @myCashAdvances.Count</span>
+				<span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">My liquidations: @myLiquidations.Count</span>
+				@if (lastLoadedAt.HasValue)
+				{
+					<span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1.5">Updated @lastLoadedAt.Value.ToString("MMM dd, h:mm tt")</span>
+				}
+			</div>
+		</section>
+
+		<div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(300px,0.95fr)]">
+			<div class="grid gap-4 content-start">
+				<section class="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
+					<button @onclick='() => Nav.NavigateTo("/app/my-tasks")' class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-rose-500/40 hover:bg-neutral-900/90">
+						<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Tasks in progress</p>
+						<p class="mt-3 text-3xl font-semibold text-white">@GetInProgressTaskCount()</p>
+						<p class="mt-4 text-sm text-neutral-400">Continue the items already in your flow.</p>
+					</button>
+
+					<button @onclick='() => Nav.NavigateTo("/app/task-pool")' class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-sky-500/40 hover:bg-neutral-900/90">
+						<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Task pool ready</p>
+						<p class="mt-3 text-3xl font-semibold text-white">@poolTasksCount</p>
+						<p class="mt-4 text-sm text-neutral-400">Tasks waiting to be claimed by available staff.</p>
+					</button>
+
+					<button @onclick='() => Nav.NavigateTo("/app/cash-advances")' class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-amber-500/40 hover:bg-neutral-900/90">
+						<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Cash advances</p>
+						<p class="mt-3 text-3xl font-semibold text-white">@GetPendingCashAdvancesCount()</p>
+						<p class="mt-4 text-sm text-neutral-400">Requests waiting for review and finance release.</p>
+					</button>
+
+					<button @onclick='() => Nav.NavigateTo("/app/liquidations")' class="group rounded-3xl border border-neutral-800 bg-neutral-900 p-5 text-left transition hover:border-emerald-500/40 hover:bg-neutral-900/90">
+						<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Liquidations</p>
+						<p class="mt-3 text-3xl font-semibold text-white">@GetPendingLiquidationsCount()</p>
+						<p class="mt-4 text-sm text-neutral-400">Submissions pending manager/admin approval.</p>
+					</button>
+				</section>
+
+				<section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+					<div class="flex items-center justify-between gap-3">
+						<div>
+							<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Work queue</p>
+							<h2 class="mt-2 text-xl font-semibold text-white">Upcoming and overdue tasks</h2>
+						</div>
+						<button @onclick='() => Nav.NavigateTo("/app/my-tasks")' class="text-sm text-neutral-400 transition hover:text-white">Open tasks</button>
+					</div>
+
+					@if (!myTasks.Any())
+					{
+						<div class="mt-6 rounded-2xl border border-dashed border-neutral-700 bg-neutral-950 px-4 py-10 text-center text-sm text-neutral-500">
+							No tasks assigned yet.
+						</div>
+					}
+					else
+					{
+						<div class="mt-6 space-y-3">
+							@foreach (var task in GetPriorityTasks())
+							{
+								<div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+									<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+										<p class="text-base font-medium text-white">@task.Title</p>
+										<span class="rounded-full border border-neutral-700 px-2.5 py-1 text-xs text-neutral-300">@task.StatusName</span>
+									</div>
+									<p class="mt-2 text-sm text-neutral-400">@task.Description</p>
+									<div class="mt-3 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
+										<span>Priority: @task.PriorityName</span>
+										@if (task.DueDate.HasValue)
+										{
+											<span>Due @task.DueDate.Value.ToString("MMM dd, yyyy")</span>
+										}
+										@if (task.IsOverdue)
+										{
+											<span class="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-red-300">Overdue</span>
+										}
+									</div>
+								</div>
+							}
+						</div>
+					}
+				</section>
+			</div>
+
+			<div class="grid gap-4 content-start">
+				<section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+					<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Approvals snapshot</p>
+					<h2 class="mt-2 text-xl font-semibold text-white">My request status</h2>
+
+					<div class="mt-5 space-y-3">
+						<div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+							<div class="flex items-center justify-between text-sm">
+								<span class="text-neutral-300">Cash advances pending</span>
+								<span class="font-medium text-white">@GetPendingCashAdvancesCount()</span>
+							</div>
+						</div>
+						<div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+							<div class="flex items-center justify-between text-sm">
+								<span class="text-neutral-300">Liquidations pending</span>
+								<span class="font-medium text-white">@GetPendingLiquidationsCount()</span>
+							</div>
+						</div>
+						<div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+							<div class="flex items-center justify-between text-sm">
+								<span class="text-neutral-300">Approved requests</span>
+								<span class="font-medium text-emerald-300">@GetApprovedRequestsCount()</span>
+							</div>
+						</div>
+					</div>
+				</section>
+
+				<section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+					<p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Quick actions</p>
+					<h2 class="mt-2 text-xl font-semibold text-white">Go where work is</h2>
+
+					<div class="mt-5 grid gap-3">
+						<button @onclick='() => Nav.NavigateTo("/app/task-pool")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+							<span class="text-sm font-medium text-white">Claim from task pool</span>
+							<span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+						</button>
+						<button @onclick='() => Nav.NavigateTo("/app/cash-advances")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+							<span class="text-sm font-medium text-white">Submit cash advance</span>
+							<span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+						</button>
+						<button @onclick='() => Nav.NavigateTo("/app/liquidations")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+							<span class="text-sm font-medium text-white">Submit liquidation</span>
+							<span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+						</button>
+						<button @onclick='() => Nav.NavigateTo("/profile")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+							<span class="text-sm font-medium text-white">Update profile & password</span>
+							<span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+						</button>
+					</div>
+				</section>
+			</div>
+		</div>
+	}
+</div>
+
+@code {
+	private bool isLoading = true;
+	private DateTime? lastLoadedAt;
+	private UserProfileDto? myProfile;
+	private List<TaskDto> myTasks = new();
+	private List<CashAdvanceDto> myCashAdvances = new();
+	private List<LiquidationDto> myLiquidations = new();
+	private int notificationsUnreadCount;
+	private int poolTasksCount;
+
+	protected override async Task OnInitializedAsync()
+	{
+		await LoadDashboardData();
+	}
+
+	private async Task LoadDashboardData()
+	{
+		isLoading = true;
+
+		var profileTask = AuthApi.GetMyProfileAsync();
+		var tasksTask = TaskApi.GetMyTasksAsync();
+		var poolTask = TaskApi.GetPoolTasksAsync();
+		var cashTask = CashAdvanceApi.GetMyRequestsAsync();
+		var liquidationTask = LiquidationApi.GetMyLiquidationsAsync();
+		var unreadTask = NotificationApi.GetUnreadCountAsync();
+
+		await Task.WhenAll(profileTask, tasksTask, poolTask, cashTask, liquidationTask, unreadTask);
+
+		myProfile = profileTask.Result;
+		myTasks = tasksTask.Result ?? new List<TaskDto>();
+		poolTasksCount = poolTask.Result?.Count ?? 0;
+		myCashAdvances = cashTask.Result ?? new List<CashAdvanceDto>();
+		myLiquidations = liquidationTask.Result ?? new List<LiquidationDto>();
+		notificationsUnreadCount = unreadTask.Result;
+
+		lastLoadedAt = DateTime.Now;
+		isLoading = false;
+	}
+
+	private string GetFirstNameOrFallback()
+	{
+		if (!string.IsNullOrWhiteSpace(myProfile?.FirstName))
+		{
+			return myProfile.FirstName;
+		}
+
+		if (!string.IsNullOrWhiteSpace(myProfile?.Username))
+		{
+			return myProfile.Username;
+		}
+
+		return "there";
+	}
+
+	private int GetOpenTaskCount() => myTasks.Count(task => task.Status is 1 or 2 or 3);
+
+	private int GetInProgressTaskCount() => myTasks.Count(task => task.Status == 3);
+
+	private int GetOverdueTaskCount() => myTasks.Count(task => task.IsOverdue && task.Status is not 4 and not 5);
+
+	private int GetPendingCashAdvancesCount() => myCashAdvances.Count(item => string.Equals(item.StatusName, "Pending", StringComparison.OrdinalIgnoreCase) || item.Status == 1);
+
+	private int GetPendingLiquidationsCount() => myLiquidations.Count(item => string.Equals(item.StatusName, "Pending", StringComparison.OrdinalIgnoreCase) || item.Status == 1);
+
+	private int GetPendingApprovalsCount() => GetPendingCashAdvancesCount() + GetPendingLiquidationsCount();
+
+	private int GetApprovedRequestsCount()
+	{
+		var approvedCash = myCashAdvances.Count(item => string.Equals(item.StatusName, "Approved", StringComparison.OrdinalIgnoreCase));
+		var approvedLiquidations = myLiquidations.Count(item => string.Equals(item.StatusName, "Approved", StringComparison.OrdinalIgnoreCase));
+		return approvedCash + approvedLiquidations;
+	}
+
+	private IEnumerable<TaskDto> GetPriorityTasks()
+	{
+		return myTasks
+			.OrderByDescending(task => task.IsOverdue)
+			.ThenByDescending(task => task.Priority)
+			.ThenBy(task => task.DueDate)
+			.Take(4);
+	}
+}

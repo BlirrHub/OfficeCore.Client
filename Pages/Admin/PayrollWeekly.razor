@@ -12,38 +12,38 @@
 }
 else
 {
-    <div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
+    <div class="h-[calc(100vh-120px)] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5 flex flex-col">
         <div class="flex flex-wrap items-end justify-between gap-3 mb-4 flex-shrink-0">
             <div>
-                <h1 class="text-2xl text-white font-bold">Weekly Payroll</h1>
+                <h1 class="text-2xl sm:text-3xl text-white font-semibold tracking-tight">Weekly Payroll</h1>
                 <p class="text-sm text-gray-200">Generate and manage weekly income reports.</p>
             </div>
 
-            <div class="flex items-end gap-2">
+            <div class="flex items-end gap-2 rounded-2xl border border-neutral-800 bg-neutral-900 p-3 flex-wrap">
                 @if (response is not null && response.Employees.Any(e => e.Status == PayrollStatus.Draft))
                 {
                     @if (!isEditMode)
                     {
-                        <button class="bg-yellow-600 text-white rounded-lg py-2 px-4 hover:bg-yellow-700" @onclick="StartEditAll">
+                        <button class="rounded-lg border border-yellow-400/40 bg-yellow-500/20 py-2 px-4 text-yellow-200 transition hover:bg-yellow-500/30" @onclick="StartEditAll">
                             Edit All
                         </button>
                     }
                     else
                     {
-                        <button class="bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="SaveAllDeductions">
+                        <button class="rounded-lg border border-emerald-400/40 bg-emerald-500/20 py-2 px-4 text-emerald-200 transition hover:bg-emerald-500/30" @onclick="SaveAllDeductions">
                             Save All
                         </button>
-                        <button class="bg-gray-500 text-white rounded-lg py-2 px-4 hover:bg-gray-600" @onclick="CancelEditAll">
+                        <button class="rounded-lg border border-neutral-600 bg-neutral-800 py-2 px-4 text-white transition hover:bg-neutral-700" @onclick="CancelEditAll">
                             Cancel
                         </button>
                     }
                 }
-                <button class="bg-green-600 text-white rounded-lg py-2 px-4 hover:bg-green-700" @onclick="GeneratePayroll">
+                <button class="rounded-lg border border-emerald-400/40 bg-emerald-500/20 py-2 px-4 text-emerald-200 transition hover:bg-emerald-500/30" @onclick="GeneratePayroll">
                     Generate Payroll
                 </button>
                 @if (response is not null && response.Employees.Any())
                 {
-                    <button class="bg-blue-600 text-white rounded-lg py-2 px-4 hover:bg-blue-700 flex items-center gap-2" @onclick="DownloadExcel" disabled="@isDownloading">
+                    <button class="rounded-lg border border-sky-400/40 bg-sky-500/20 py-2 px-4 text-sky-200 transition hover:bg-sky-500/30 flex items-center gap-2" @onclick="DownloadExcel" disabled="@isDownloading">
                         @if (isDownloading)
                         {
                             <span>Downloading...</span>
@@ -56,7 +56,7 @@ else
                             <span>Download Excel</span>
                         }
                     </button>
-                    <button class="bg-purple-600 text-white rounded-lg py-2 px-4 hover:bg-purple-700 flex items-center gap-2" @onclick="PrintPayslips" disabled="@isPrinting">
+                    <button class="rounded-lg border border-violet-400/40 bg-violet-500/20 py-2 px-4 text-violet-200 transition hover:bg-violet-500/30 flex items-center gap-2" @onclick="PrintPayslips" disabled="@isPrinting">
                         @if (isPrinting)
                         {
                             <span>Generating...</span>
@@ -72,9 +72,9 @@ else
                 }
                 <div>
                     <label class="block text-xs text-gray-200 mb-1">Week start</label>
-                    <input class="border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
+                    <input class="border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 bg-neutral-950" type="date" @bind="WeekStart" @bind:format="yyyy-MM-dd" />
                 </div>
-                <button class="bg-black text-white border rounded-2xl p-2 px-6 py-2 hover:bg-gray-800" @onclick="Load">Load</button>
+                <button class="rounded-2xl border border-amber-400/40 bg-amber-400/20 p-2 px-6 py-2 text-amber-200 transition hover:bg-amber-400/30" @onclick="Load">Load</button>
             </div>
         </div>
 

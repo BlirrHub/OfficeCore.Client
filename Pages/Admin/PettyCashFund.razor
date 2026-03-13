@@ -4,11 +4,14 @@
 @using OfficeCore.Client.Services.Api
 @inject PettyCashAdminApi PettyCashApi
 
-<div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
-    <h1 class="text-xl sm:text-2xl text-white font-bold mb-4">Petty Cash Fund</h1>
+<div class="h-[calc(100vh-120px)] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5 flex flex-col">
+    <div class="mb-4">
+        <h1 class="text-xl sm:text-3xl text-white font-semibold tracking-tight">Petty Cash Fund</h1>
+        <p class="mt-1 text-xs sm:text-sm text-neutral-400">Monitor balances, funding actions, and transaction history.</p>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4 flex-shrink-0">
-        <div class="bg-neutral-800 rounded-lg p-6">
+        <div class="bg-neutral-900 rounded-2xl border border-neutral-800 p-6">
             <div class="flex justify-between items-start mb-4">
                 <div>
                     <p class="text-sm text-gray-400">Current Balance</p>
@@ -37,7 +40,7 @@
             }
         </div>
 
-        <div class="bg-neutral-800 rounded-lg p-6">
+        <div class="bg-neutral-900 rounded-2xl border border-neutral-800 p-6">
             <p class="text-sm text-gray-400 mb-2">Today's Opening</p>
             <p class="text-2xl font-bold text-green-400">
                 @if (currentBalance != null)
@@ -51,7 +54,7 @@
             </p>
         </div>
 
-        <div class="bg-neutral-800 rounded-lg p-6">
+        <div class="bg-neutral-900 rounded-2xl border border-neutral-800 p-6">
             <p class="text-sm text-gray-400 mb-2">Total Deposits | Withdrawals</p>
             <p class="text-2xl font-bold text-purple-400">
                 @if (currentBalance != null)
@@ -75,31 +78,31 @@
         </div>
     </div>
 
-    <div class="bg-neutral-800 rounded-lg p-4 mb-4 flex-shrink-0">
+    <div class="bg-neutral-900 rounded-2xl border border-neutral-800 p-4 mb-4 flex-shrink-0">
         <h2 class="text-lg font-semibold text-white mb-3">Manage Fund</h2>
         <div class="flex gap-3 flex-wrap">
-            <input type="date" @bind="selectedDate" class="flex-1 min-w-[200px] border rounded-lg px-3 py-2 text-gray-200 bg-neutral-700" />
-            <button @onclick="LoadSpecificDate" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+            <input type="date" @bind="selectedDate" class="flex-1 min-w-[200px] border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 bg-neutral-950" />
+            <button @onclick="LoadSpecificDate" class="rounded-lg border border-sky-400/40 bg-sky-500/20 px-4 py-2 text-sky-200 transition hover:bg-sky-500/30">
                 Load Date
             </button>
-            <button @onclick="OpenSetOpeningModal" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700">
+            <button @onclick="OpenSetOpeningModal" class="rounded-lg border border-violet-400/40 bg-violet-500/20 px-4 py-2 text-violet-200 transition hover:bg-violet-500/30">
                 Set Opening Balance
             </button>
-            <button @onclick="OpenAddFundModal" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+            <button @onclick="OpenAddFundModal" class="rounded-lg border border-emerald-400/40 bg-emerald-500/20 px-4 py-2 text-emerald-200 transition hover:bg-emerald-500/30">
                 Add Fund
             </button>
-            <button @onclick="OpenDeductFundModal" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+            <button @onclick="OpenDeductFundModal" class="rounded-lg border border-red-400/40 bg-red-500/20 px-4 py-2 text-red-200 transition hover:bg-red-500/30">
                 Deduct Fund
             </button>
         </div>
     </div>
 
-    <div class="flex-1 overflow-auto bg-neutral-800 rounded-lg p-4">
+    <div class="flex-1 overflow-auto bg-neutral-900 rounded-2xl border border-neutral-800 p-4">
         <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-semibold text-white">
                 Fund History - @selectedDate.ToString("MMMM dd, yyyy")
             </h2>
-            <button @onclick="LoadTransactionHistory" class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 text-sm">
+            <button @onclick="LoadTransactionHistory" class="rounded-lg border border-sky-400/40 bg-sky-500/20 px-3 py-2 text-sm text-sky-200 transition hover:bg-sky-500/30">
                 <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>

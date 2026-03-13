@@ -5,7 +5,10 @@
 @inject OfficeCore.Client.Services.State.AuthState AuthState
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
 
-<h1 class="text-2xl font-bold">Employees</h1>
+<div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4 sm:p-6">
+    <h1 class="text-2xl sm:text-3xl font-semibold tracking-tight text-white">Employees</h1>
+    <p class="mt-1 text-sm text-neutral-400">Create a new employee profile and default settings.</p>
+</div>
 
 @if (AuthState.UserType != "Admin")
 {
@@ -13,28 +16,28 @@
 }
 else
 {
-    <div class="mt-6 max-w-xl bg-white border rounded-xl p-4">
-        <h2 class="font-semibold">Create Employee</h2>
+    <div class="mt-6 max-w-xl rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+        <h2 class="font-semibold text-white">Create Employee</h2>
 
         <div class="mt-4 grid grid-cols-1 gap-3">
-            <input class="border rounded-lg px-3 py-2" placeholder="Username" @bind="Req.Username" />
+            <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Username" @bind="Req.Username" />
 
             <div class="grid grid-cols-2 gap-3">
-                <input class="border rounded-lg px-3 py-2" placeholder="First name" @bind="Req.FirstName" />
-                <input class="border rounded-lg px-3 py-2" placeholder="Last name" @bind="Req.LastName" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="First name" @bind="Req.FirstName" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Last name" @bind="Req.LastName" />
             </div>
 
-            <input class="border rounded-lg px-3 py-2" placeholder="Department" @bind="Req.Department" />
-            <input class="border rounded-lg px-3 py-2" placeholder="Position" @bind="Req.Position" />
+            <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Department" @bind="Req.Department" />
+            <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Position" @bind="Req.Position" />
 
             <div class="grid grid-cols-3 gap-3">
-                <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="Req.BiometricId" />
-                <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="Req.DailyRate" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="Req.BiometricId" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="Req.DailyRate" />
             </div>
 
             <div>
-                <label class="text-sm text-gray-600">Schedule</label>
-                <select class="border rounded-lg px-3 py-2 w-full" @bind="SelectedSchedule">
+                <label class="text-sm text-gray-300">Schedule</label>
+                <select class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2 w-full" @bind="SelectedSchedule">
                     <option value="8-5">8:00 am - 5:00 pm</option>
                     <option value="9-6">9:00 am - 6:00 pm</option>
                     <option value="none">None</option>
@@ -46,8 +49,8 @@ else
                 OT Enabled
             </label>
 
-            <div class="border rounded-lg p-3 bg-gray-50">
-                <p class="text-sm font-semibold mb-2 text-gray-700">Government Deductions</p>
+            <div class="border border-neutral-700 rounded-lg p-3 bg-neutral-900">
+                <p class="text-sm font-semibold mb-2 text-gray-200">Government Deductions</p>
                 <div class="grid grid-cols-3 gap-2">
                     <label class="flex items-center gap-2 text-sm">
                         <input type="checkbox" @bind="Req.HasSSSDeduction" />
@@ -64,7 +67,7 @@ else
                 </div>
             </div>
 
-            <input class="border rounded-lg px-3 py-2"
+                 <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2"
                    placeholder="Roles (comma separated: HR,Payroll)"
                    @bind="RolesInput" />
 
@@ -73,7 +76,7 @@ else
                 <div class="text-sm @(IsError ? "text-red-600" : "text-green-700")">@Message</div>
             }
 
-            <button class="bg-black text-white rounded-lg py-2"
+            <button class="rounded-lg border border-amber-400/40 bg-amber-400/20 py-2 text-amber-200 transition hover:bg-amber-400/30"
                     @onclick="CreateNewEmployee">
                 Create
             </button>

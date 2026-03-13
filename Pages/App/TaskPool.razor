@@ -6,10 +6,10 @@
 @inject TaskApi TaskApi
 @implements IDisposable
 
-<div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col">
+<div class="h-[calc(100vh-120px)] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5 flex flex-col">
     <div class="flex justify-between items-center mb-4 flex-shrink-0">
         <div>
-            <h1 class="text-xl sm:text-2xl text-white font-bold">Task Pool</h1>
+            <h1 class="text-xl sm:text-3xl text-white font-semibold tracking-tight">Task Pool</h1>
             <p class="text-gray-400 text-xs sm:text-sm mt-1">Available tasks that anyone can claim - first come, first served!</p>
         </div>
         <div class="flex items-center gap-2 text-xs text-gray-400">
@@ -20,10 +20,10 @@
         </div>
     </div>
 
-    <div class="mb-4 flex gap-4 items-end flex-shrink-0 flex-wrap">
+    <div class="mb-4 flex gap-4 items-end flex-shrink-0 flex-wrap rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
         <div class="flex-1 min-w-[150px]">
             <label class="block text-xs text-gray-200 mb-1">Priority</label>
-            <select @bind="selectedPriority" class="w-full border rounded-lg px-3 py-2 text-gray-200 bg-neutral-800">
+            <select @bind="selectedPriority" class="w-full border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 bg-neutral-950">
                 <option value="">All Priorities</option>
                 <option value="1">Critical</option>
                 <option value="2">High</option>
@@ -31,12 +31,12 @@
                 <option value="4">Low</option>
             </select>
         </div>
-        <button @onclick="() => LoadTasks()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
+        <button @onclick="() => LoadTasks()" class="rounded-lg border border-amber-400/40 bg-amber-400/20 px-4 py-2 text-amber-200 transition hover:bg-amber-400/30">
             Filter
         </button>
     </div>
 
-    <div class="bg-neutral-800 rounded-lg p-4 flex-1 overflow-auto">
+    <div class="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 flex-1 overflow-auto">
         @if (isLoading)
         {
             <div class="text-center py-8">
@@ -58,7 +58,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 @foreach (var task in tasks)
                 {
-                    <div class="bg-neutral-700 rounded-lg shadow-lg overflow-hidden border border-neutral-600 hover:border-green-500 transition-colors">
+                    <div class="overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-950 shadow-lg transition-colors hover:border-emerald-500/40 hover:bg-neutral-900">
                         <div class="p-4">
                             <div class="flex justify-between items-start mb-3">
                                 <h3 class="text-white font-semibold text-lg truncate flex-1">@task.Title</h3>
@@ -98,12 +98,12 @@
 
                             <div class="flex gap-2">
                                 <button @onclick="() => ViewDetails(task.Id)"
-                                        class="flex-1 bg-blue-600 text-white text-sm py-2 rounded hover:bg-blue-700 transition-colors">
+                                    class="flex-1 rounded border border-sky-400/40 bg-sky-500/20 py-2 text-sm text-sky-200 transition hover:bg-sky-500/30">
                                     View Details
                                 </button>
 
                                 <button @onclick="() => ClaimTask(task.Id)"
-                                        class="flex-1 bg-green-600 text-white text-sm py-2 rounded hover:bg-green-700 transition-colors">
+                                    class="flex-1 rounded border border-emerald-400/40 bg-emerald-500/20 py-2 text-sm text-emerald-200 transition hover:bg-emerald-500/30">
                                     Claim Task
                                 </button>
                             </div>

@@ -4,29 +4,29 @@
 @using OfficeCore.Client.Services.Api
 @inject LiquidationApi LiquidationApi
 
-<div class="h-[calc(100vh-120px)] bg-neutral-900 border rounded-xl p-3 sm:p-4 flex flex-col overflow-auto">
+<div class="h-[calc(100vh-120px)] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5 flex flex-col overflow-auto">
     <div class="mb-4 flex-shrink-0">
-        <h1 class="text-xl sm:text-2xl text-white font-bold">Liquidations</h1>
+        <h1 class="text-xl sm:text-3xl text-white font-semibold tracking-tight">Liquidations</h1>
         <p class="text-gray-400 text-xs sm:text-sm mt-1">View and track your daily liquidations</p>
     </div>
 
-    <div class="mb-4 bg-blue-900 bg-opacity-30 border border-blue-700 rounded-lg p-4 flex-shrink-0">
+    <div class="mb-4 rounded-2xl border border-sky-400/20 bg-sky-500/10 p-4 flex-shrink-0">
         <p class="text-sm text-blue-300">
             <strong>Note:</strong> Daily liquidations are submitted via the mobile app. 
             This page shows your liquidation history for reference.
         </p>
     </div>
 
-    <div class="mb-4 flex gap-4 items-end flex-shrink-0">
+    <div class="mb-4 flex gap-4 items-end flex-shrink-0 rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
         <div class="flex-1">
             <label class="block text-sm font-medium text-gray-400 mb-1">Start Date</label>
-            <input type="date" @bind="startDate" class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <input type="date" @bind="startDate" class="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-white" />
         </div>
         <div class="flex-1">
             <label class="block text-sm font-medium text-gray-400 mb-1">End Date</label>
-            <input type="date" @bind="endDate" class="w-full bg-neutral-700 border border-neutral-600 text-white rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            <input type="date" @bind="endDate" class="w-full rounded border border-neutral-700 bg-neutral-950 px-3 py-2 text-white" />
         </div>
-        <button @onclick="LoadLiquidations" class="bg-black text-white border rounded-2xl px-6 py-2 hover:bg-gray-800 whitespace-nowrap">
+        <button @onclick="LoadLiquidations" class="rounded-2xl border border-amber-400/40 bg-amber-400/20 px-6 py-2 whitespace-nowrap text-amber-200 transition hover:bg-amber-400/30">
             Filter
         </button>
     </div>
@@ -39,7 +39,7 @@
     }
     else if (liquidations == null || !liquidations.Any())
     {
-        <div class="bg-neutral-800 border border-neutral-700 rounded-lg p-8 text-center flex-1 flex items-center justify-center">
+        <div class="flex flex-1 items-center justify-center rounded-2xl border border-neutral-800 bg-neutral-900 p-8 text-center">
             <p class="text-gray-400">No liquidations found for the selected period.</p>
         </div>
     }
@@ -48,7 +48,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 overflow-auto">
             @foreach (var liq in liquidations.OrderByDescending(l => l.Date))
             {
-                <div class="bg-neutral-800 border border-neutral-700 rounded-lg p-5 hover:bg-neutral-750 transition-colors">
+                <div class="rounded-2xl border border-neutral-800 bg-neutral-900 p-5 transition-colors hover:bg-neutral-800">
                     <div class="flex justify-between items-start mb-3">
                         <div>
                             <p class="text-sm text-gray-400">Date</p>
@@ -105,7 +105,7 @@
                     }
 
                     <button @onclick="() => ViewDetails(liq.Id)"
-                            class="w-full bg-neutral-700 border border-neutral-600 text-white px-3 py-2 rounded hover:bg-neutral-600 text-sm">
+                            class="w-full rounded border border-sky-400/40 bg-sky-500/20 px-3 py-2 text-sm text-sky-200 transition hover:bg-sky-500/30">
                         View Details
                     </button>
                 </div>

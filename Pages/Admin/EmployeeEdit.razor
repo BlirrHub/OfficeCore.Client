@@ -19,36 +19,36 @@ else if (employee is null)
 }
 else
 {
-    <div class="mt-6 max-w-xl bg-white border rounded-xl p-4">
+    <div class="mt-6 max-w-xl rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
         <div class="flex items-center justify-between">
-            <h1 class="text-2xl font-bold">Edit Employee</h1>
-            <button class="text-indigo-600 hover:text-indigo-900" @onclick="BackToList">Back</button>
+            <h1 class="text-2xl font-semibold tracking-tight text-white">Edit Employee</h1>
+            <button class="text-amber-300 hover:text-amber-200" @onclick="BackToList">Back</button>
         </div>
 
         <div class="mt-4 grid grid-cols-1 gap-3">
-            <div class="text-sm text-gray-500">Username: <span class="text-gray-900 font-medium">@employee.Username</span></div>
+            <div class="text-sm text-gray-400">Username: <span class="text-gray-100 font-medium">@employee.Username</span></div>
 
             <div class="grid grid-cols-2 gap-3">
-                <input class="border rounded-lg px-3 py-2" placeholder="First name" @bind="employee.FirstName" />
-                <input class="border rounded-lg px-3 py-2" placeholder="Last name" @bind="employee.LastName" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="First name" @bind="employee.FirstName" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Last name" @bind="employee.LastName" />
             </div>
 
-            <input class="border rounded-lg px-3 py-2" placeholder="Department" @bind="employee.Department" />
-            <input class="border rounded-lg px-3 py-2" placeholder="Position" @bind="employee.Position" />
+            <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Department" @bind="employee.Department" />
+            <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" placeholder="Position" @bind="employee.Position" />
 
             <div class="grid grid-cols-2 gap-3">
-                <input class="border rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="employee.BiometricId" />
-                <input class="border rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="employee.DailyRate" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" type="number" placeholder="Biometric ID" @bind="employee.BiometricId" />
+                <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2" type="number" step="0.01" placeholder="Daily rate" @bind="employee.DailyRate" />
             </div>
 
             <div class="grid grid-cols-2 gap-3">
                 <div>
-                    <label class="text-sm text-gray-600">Schedule Time In</label>
-                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeIn" />
+                    <label class="text-sm text-gray-300">Schedule Time In</label>
+                    <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeIn" />
                 </div>
                 <div>
-                    <label class="text-sm text-gray-600">Schedule Time Out</label>
-                    <input class="border rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeOut" />
+                    <label class="text-sm text-gray-300">Schedule Time Out</label>
+                    <input class="border border-neutral-700 bg-neutral-900 text-gray-100 rounded-lg px-3 py-2 w-full" type="time" @bind="employee.SchedTimeOut" />
                 </div>
             </div>
 
@@ -57,8 +57,8 @@ else
                 OT Enabled
             </label>
 
-            <div class="border rounded-lg p-3 bg-gray-50">
-                <p class="text-sm font-semibold mb-2 text-gray-700">Government Deductions</p>
+            <div class="border border-neutral-700 rounded-lg p-3 bg-neutral-900">
+                <p class="text-sm font-semibold mb-2 text-gray-200">Government Deductions</p>
                 <div class="grid grid-cols-3 gap-2">
                     <label class="flex items-center gap-2 text-sm">
                         <input type="checkbox" @bind="employee.HasSSSDeduction" />
@@ -86,9 +86,9 @@ else
             }
 
             <div class="flex gap-2">
-                <button class="bg-black text-white rounded-lg py-2 px-4" @onclick="Save">Save</button>
+                <button class="rounded-lg border border-amber-400/40 bg-amber-400/20 py-2 px-4 text-amber-200 transition hover:bg-amber-400/30" @onclick="Save">Save</button>
 
-                <button class="border rounded-lg py-2 px-4 text-red-700" @onclick="Delete">
+                <button class="rounded-lg border border-red-400/40 bg-red-500/10 py-2 px-4 text-red-300 transition hover:bg-red-500/20" @onclick="Delete">
                     @(confirmDelete ? "Click again to confirm" : "Delete")
                 </button>
             </div>

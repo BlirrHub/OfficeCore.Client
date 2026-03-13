@@ -1,10 +1,12 @@
 @using OfficeCore.Client.Models.Dtos
 @using OfficeCore.Client.Services.Api
+@using OfficeCore.Client.Services.State
 @inject NotificationApi NotificationApi
 @inject NavigationManager Navigation
+@inject AuthState AuthState
 
 <div class="relative">
-    <button @onclick="ToggleDropdown" class="relative p-2 text-gray-400 hover:text-gray-600 focus:outline-none">
+    <button @onclick="ToggleDropdown" class="relative rounded-lg p-2 text-neutral-400 transition hover:bg-neutral-800 hover:text-neutral-200 focus:outline-none">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
         </svg>
@@ -18,12 +20,12 @@
 
     @if (isOpen)
     {
-        <div class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
-            <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                <h3 class="text-lg font-semibold text-gray-900">Notifications</h3>
+        <div class="absolute right-0 mt-2 w-80 rounded-2xl border border-neutral-800 bg-neutral-900 shadow-2xl z-50">
+            <div class="flex items-center justify-between border-b border-neutral-800 p-4">
+                <h3 class="text-lg font-semibold text-white">Notifications</h3>
                 @if (unreadCount > 0)
                 {
-                    <button @onclick="MarkAllAsRead" class="text-sm text-blue-600 hover:text-blue-700">
+                    <button @onclick="MarkAllAsRead" class="text-sm text-amber-300 transition hover:text-amber-200">
                         Mark all read
                     </button>
                 }
@@ -32,7 +34,7 @@
             <div class="max-h-96 overflow-y-auto">
                 @if (notifications.Count == 0)
                 {
-                    <div class="p-4 text-center text-gray-500">
+                    <div class="p-4 text-center text-neutral-500">
                         No notifications
                     </div>
                 }
@@ -40,17 +42,17 @@
                 {
                     @foreach (var notification in notifications)
                     {
-                        <div class="@GetNotificationClasses(notification) cursor-pointer hover:bg-gray-50 transition-colors" 
+                        <div class="@GetNotificationClasses(notification) cursor-pointer transition-colors" 
                              @onclick="() => HandleNotificationClick(notification)">
                             <div class="flex justify-between items-start">
                                 <div class="flex-1">
                                     <p class="@GetTitleClasses(notification)">@notification.Title</p>
-                                    <p class="text-sm text-gray-600 mt-1">@notification.Message</p>
-                                    <p class="text-xs text-gray-400 mt-1">@FormatTimeAgo(notification.CreatedAt)</p>
+                                    <p class="mt-1 text-sm text-neutral-300">@notification.Message</p>
+                                    <p class="mt-1 text-xs text-neutral-500">@FormatTimeAgo(notification.CreatedAt)</p>
                                 </div>
                                 <button @onclick="(e) => DeleteNotification(notification.Id, e)" 
                                         @onclick:stopPropagation="true"
-                                        class="ml-2 text-gray-400 hover:text-red-500">
+                                        class="ml-2 text-neutral-500 transition hover:text-red-400">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                                     </svg>
@@ -63,8 +65,8 @@
 
             @if (notifications.Count > 0)
             {
-                <div class="p-2 border-t border-gray-200 text-center">
-                    <button @onclick="ViewAllNotifications" class="text-sm text-blue-600 hover:text-blue-700">
+                <div class="border-t border-neutral-800 p-2 text-center">
+                    <button @onclick="ViewAllNotifications" class="text-sm text-amber-300 transition hover:text-amber-200">
                         View all notifications
                     </button>
                 </div>
@@ -114,9 +116,10 @@
             unreadCount = Math.Max(0, unreadCount - 1);
         }
 
-        if (!string.IsNullOrEmpty(notification.ActionUrl))
+        var targetUrl = NormalizeActionUrl(notification.ActionUrl);
+        if (!string.IsNullOrEmpty(targetUrl))
         {
-            Navigation.NavigateTo(notification.ActionUrl);
+            Navigation.NavigateTo(targetUrl);
         }
 
         isOpen = false;
@@ -149,22 +152,55 @@
 
     private void ViewAllNotifications()
     {
-        Navigation.NavigateTo("/notifications");
+        Navigation.NavigateTo(GetNotificationsHubRoute());
         isOpen = false;
     }
 
     private string GetNotificationClasses(NotificationDto notification)
     {
         return notification.IsRead 
-            ? "p-4 border-b border-gray-200" 
-            : "p-4 border-b border-gray-200 bg-blue-50";
+            ? "border-b border-neutral-800 p-4 hover:bg-neutral-800/70" 
+            : "border-b border-neutral-800 bg-amber-500/10 p-4 hover:bg-amber-500/15";
     }
 
     private string GetTitleClasses(NotificationDto notification)
     {
         return notification.IsRead 
-            ? "font-medium text-gray-900" 
-            : "font-semibold text-gray-900";
+            ? "font-medium text-white" 
+            : "font-semibold text-amber-200";
+    }
+
+    private string GetNotificationsHubRoute()
+    {
+        return string.Equals(AuthState.UserType, "Admin", StringComparison.OrdinalIgnoreCase)
+            ? "/admin/notifications"
+            : "/app/notifications";
+    }
+
+    private string? NormalizeActionUrl(string? actionUrl)
+    {
+        if (string.IsNullOrWhiteSpace(actionUrl))
+        {
+            return null;
+        }
+
+        var normalized = actionUrl.Trim();
+
+        if (!normalized.StartsWith('/'))
+        {
+            normalized = "/" + normalized;
+        }
+
+        if (normalized.Equals("/app/cash-advance", StringComparison.OrdinalIgnoreCase))
+            return "/app/cash-advances";
+
+        if (normalized.Equals("/app/liquidation", StringComparison.OrdinalIgnoreCase))
+            return "/app/liquidations";
+
+        if (normalized.Equals("/notifications", StringComparison.OrdinalIgnoreCase))
+            return GetNotificationsHubRoute();
+
+        return normalized;
     }
 
     private string FormatTimeAgo(DateTimeOffset time)
