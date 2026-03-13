@@ -1,9 +1,12 @@
 @page "/admin/liquidations"
 @attribute [Authorize(Roles = "Admin")]
+@using Microsoft.AspNetCore.Components.Forms
 @using OfficeCore.Client.Models.Dtos
+@using OfficeCore.Client.Features.Employees
 @using OfficeCore.Client.Services.Api
 @inject LiquidationAdminApi LiquidationApi
 @inject PettyCashAdminApi PettyCashApi
+@inject AdminApi AdminApi
 @implements IDisposable
 
 <div class="h-[calc(100vh-120px)] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5 flex flex-col">
@@ -20,9 +23,15 @@
                 <span>Auto-refresh active</span>
             </div>
         </div>
-        <input type="date" @bind="selectedDate" @bind:event="oninput"
-               @onchange="LoadLiquidations"
-               class="border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 bg-neutral-900" />
+        <div class="flex items-center gap-3">
+            <button @onclick="OpenManualLiquidationModal"
+                    class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-4 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30">
+                Create Liquidation
+            </button>
+            <input type="date" @bind="selectedDate" @bind:event="oninput"
+                   @onchange="LoadLiquidations"
+                   class="border border-neutral-700 rounded-lg px-3 py-2 text-gray-200 bg-neutral-900" />
+        </div>
     </div>
 
     <div class="bg-neutral-900 rounded-2xl border border-neutral-800 mb-4 flex-shrink-0">
@@ -141,6 +150,122 @@
         </div>
     </div>
 </div>
+
+@if (showManualLiquidationModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" @onclick="CloseManualLiquidationModal">
+        <div class="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl" @onclick:stopPropagation="true">
+            <div class="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-semibold text-white">Create Manual Liquidation</h3>
+                    <p class="mt-1 text-sm text-neutral-400">Record a liquidation directly for an employee when it was prepared outside the mobile workflow.</p>
+                </div>
+                <button @onclick="CloseManualLiquidationModal" class="text-neutral-500 transition hover:text-neutral-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(manualLiquidationError))
+            {
+                <div class="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                    @manualLiquidationError
+                </div>
+            }
+
+            <div class="grid gap-4 md:grid-cols-3">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Employee</label>
+                    <select @bind="manualLiquidation.EmployeeId" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white">
+                        <option value="">Select an employee</option>
+                        @foreach (var employee in employees)
+                        {
+                            <option value="@employee.Id">@employee.FirstName @employee.LastName (@employee.Department)</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Date</label>
+                    <input type="date" @bind="manualLiquidation.Date" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Petty Cash Received</label>
+                    <input type="number" step="0.01" min="0" @bind="manualLiquidation.PettyCashReceived" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
+                </div>
+            </div>
+
+            <div class="mt-6 rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                <div class="mb-4 flex items-center justify-between gap-4">
+                    <div>
+                        <h4 class="text-sm font-semibold uppercase tracking-[0.2em] text-neutral-400">Expense Entries</h4>
+                        <p class="mt-1 text-sm text-neutral-500">Add each expense line included in the liquidation.</p>
+                    </div>
+                    <button @onclick="AddManualEntry"
+                            class="rounded-xl border border-sky-400/40 bg-sky-500/20 px-4 py-2 text-sm font-medium text-sky-200 transition hover:bg-sky-500/30">
+                        Add Entry
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    @for (var index = 0; index < manualLiquidation.Entries.Count; index++)
+                    {
+                        var entry = manualLiquidation.Entries[index];
+                        <div class="grid gap-3 rounded-2xl border border-neutral-800 bg-neutral-950 p-4 md:grid-cols-[1fr_180px_auto]">
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-500">Particulars</label>
+                                <input @bind="entry.Particulars" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-500">Amount</label>
+                                <input type="number" step="0.01" min="0" @bind="entry.Amount" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
+                            </div>
+                            <div>
+                                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-500">Receipt</label>
+                                <InputFile OnChange="@(args => OnManualReceiptChanged(index, args))" accept="image/*,.pdf" class="w-full rounded-xl border border-dashed border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-300 file:mr-3 file:rounded-lg file:border-0 file:bg-amber-400/20 file:px-3 file:py-2 file:text-amber-200" />
+                                <p class="mt-2 truncate text-xs text-neutral-500">@(string.IsNullOrWhiteSpace(entry.ReceiptName) ? "Optional" : entry.ReceiptName)</p>
+                            </div>
+                            <div class="flex items-end">
+                                <button @onclick="() => RemoveManualEntry(index)"
+                                        disabled="@(manualLiquidation.Entries.Count == 1)"
+                                        class="w-full rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-40">
+                                    Remove
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="mt-6 grid gap-4 md:grid-cols-3">
+                <div class="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-neutral-500">Total Spent</p>
+                    <p class="mt-2 text-2xl font-semibold text-white">₱@ManualTotalSpent.ToString("N2")</p>
+                </div>
+                <div class="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-neutral-500">Amount Returned</p>
+                    <p class="mt-2 text-2xl font-semibold text-emerald-300">₱@ManualAmountReturned.ToString("N2")</p>
+                </div>
+                <div class="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                    <p class="text-xs uppercase tracking-[0.2em] text-neutral-500">Reimbursement Due</p>
+                    <p class="mt-2 text-2xl font-semibold text-violet-300">₱@ManualReimbursementDue.ToString("N2")</p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button @onclick="CloseManualLiquidationModal"
+                        class="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-900">
+                    Cancel
+                </button>
+                <button @onclick="SubmitManualLiquidation"
+                        disabled="@isCreatingManualLiquidation"
+                        class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-5 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30 disabled:cursor-not-allowed disabled:opacity-60">
+                    @(isCreatingManualLiquidation ? "Saving..." : "Create Liquidation")
+                </button>
+            </div>
+        </div>
+    </div>
+}
 
 @if (selectedLiquidation != null)
 {
@@ -270,19 +395,29 @@
 @code {
     private List<LiquidationDto>? liquidations;
     private List<LiquidationDto>? filteredLiquidations;
+    private List<Employee> employees = new();
     private LiquidationDto? selectedLiquidation;
     private bool isLoading;
     private bool isSaving;
+    private bool showManualLiquidationModal;
+    private bool isCreatingManualLiquidation;
     private int activeTab = 1; // 1=Pending, 2=Approved, 3=Rejected, -1=All
     private int pendingCount = 0;
     private int approvedCount = 0;
     private DateOnly selectedDate = DateOnly.FromDateTime(DateTime.Today);
+    private string? manualLiquidationError;
     private UpdateLiquidationReconciliationRequest reconciliationData = new();
+    private ManualLiquidationForm manualLiquidation = ManualLiquidationForm.CreateDefault();
     private PeriodicTimer? _refreshTimer;
     private CancellationTokenSource? _cts;
 
+    private decimal ManualTotalSpent => manualLiquidation.Entries.Sum(entry => entry.Amount);
+    private decimal ManualAmountReturned => Math.Max(manualLiquidation.PettyCashReceived - ManualTotalSpent, 0m);
+    private decimal ManualReimbursementDue => Math.Max(ManualTotalSpent - manualLiquidation.PettyCashReceived, 0m);
+
     protected override async Task OnInitializedAsync()
     {
+        await LoadEmployees();
         await LoadLiquidations();
         
         // Start auto-refresh every 10 seconds
@@ -334,6 +469,11 @@
         isLoading = false;
     }
 
+    private async Task LoadEmployees()
+    {
+        employees = (await AdminApi.GetAllEmployeesAsync())?.Where(employee => employee.IsActive).OrderBy(employee => employee.FirstName).ThenBy(employee => employee.LastName).ToList() ?? new();
+    }
+
     private void ApplyFilter()
     {
         if (liquidations == null)
@@ -355,6 +495,122 @@
     {
         activeTab = tab;
         ApplyFilter();
+    }
+
+    private void OpenManualLiquidationModal()
+    {
+        manualLiquidationError = null;
+        manualLiquidation = ManualLiquidationForm.CreateDefault(selectedDate);
+        showManualLiquidationModal = true;
+    }
+
+    private void CloseManualLiquidationModal()
+    {
+        if (isCreatingManualLiquidation)
+        {
+            return;
+        }
+
+        manualLiquidationError = null;
+        showManualLiquidationModal = false;
+        manualLiquidation = ManualLiquidationForm.CreateDefault(selectedDate);
+    }
+
+    private void AddManualEntry()
+    {
+        manualLiquidation.Entries.Add(new ManualLiquidationEntry());
+    }
+
+    private void RemoveManualEntry(int index)
+    {
+        if (manualLiquidation.Entries.Count == 1)
+        {
+            return;
+        }
+
+        manualLiquidation.Entries.RemoveAt(index);
+    }
+
+    private async Task SubmitManualLiquidation()
+    {
+        manualLiquidationError = ValidateManualLiquidation();
+        if (!string.IsNullOrWhiteSpace(manualLiquidationError))
+        {
+            return;
+        }
+
+        isCreatingManualLiquidation = true;
+
+        var request = new CreateLiquidationRequest
+        {
+            UserId = manualLiquidation.EmployeeId,
+            Date = manualLiquidation.Date,
+            PettyCashReceived = manualLiquidation.PettyCashReceived,
+            IssuedByName = "Admin",
+            Entries = manualLiquidation.Entries
+                .Select(entry => new CreateLiquidationEntryDto
+                {
+                    Particulars = entry.Particulars.Trim(),
+                    Amount = entry.Amount
+                })
+                .ToList()
+        };
+
+        var created = await LiquidationApi.CreateLiquidationAsync(request, manualLiquidation.Entries.Select(entry => entry.Receipt).ToList());
+        isCreatingManualLiquidation = false;
+
+        if (created == null)
+        {
+            manualLiquidationError = LiquidationApi.LastError ?? "Unable to create the liquidation. Check for duplicate entries on the same date and try again.";
+            return;
+        }
+
+        showManualLiquidationModal = false;
+        selectedDate = created.Date;
+        await LoadLiquidations();
+        await ViewDetails(created.Id);
+    }
+
+    private string? ValidateManualLiquidation()
+    {
+        if (manualLiquidation.EmployeeId == null || manualLiquidation.EmployeeId == Guid.Empty)
+        {
+            return "Select an employee.";
+        }
+
+        if (manualLiquidation.PettyCashReceived < 0)
+        {
+            return "Petty cash received cannot be negative.";
+        }
+
+        if (manualLiquidation.Entries.Count == 0)
+        {
+            return "Add at least one expense entry.";
+        }
+
+        if (manualLiquidation.Entries.Any(entry => string.IsNullOrWhiteSpace(entry.Particulars)))
+        {
+            return "Each entry needs particulars.";
+        }
+
+        if (manualLiquidation.Entries.Any(entry => entry.Amount <= 0))
+        {
+            return "Each entry amount must be greater than zero.";
+        }
+
+        return null;
+    }
+
+    private void OnManualReceiptChanged(int index, InputFileChangeEventArgs args)
+    {
+        if (index < 0 || index >= manualLiquidation.Entries.Count)
+        {
+            return;
+        }
+
+        var file = args.File;
+        manualLiquidation.Entries[index].Receipt = file;
+        manualLiquidation.Entries[index].ReceiptName = file?.Name;
     }
 
     private async Task ViewDetails(Guid id)
@@ -420,5 +676,31 @@
     private void CloseModal()
     {
         selectedLiquidation = null;
+    }
+
+    private sealed class ManualLiquidationForm
+    {
+        public Guid? EmployeeId { get; set; }
+        public DateOnly Date { get; set; }
+        public decimal PettyCashReceived { get; set; }
+        public List<ManualLiquidationEntry> Entries { get; set; } = new();
+
+        public static ManualLiquidationForm CreateDefault(DateOnly? date = null)
+        {
+            var targetDate = date ?? DateOnly.FromDateTime(DateTime.Today);
+            return new ManualLiquidationForm
+            {
+                Date = targetDate,
+                Entries = new List<ManualLiquidationEntry> { new() }
+            };
+        }
+    }
+
+    private sealed class ManualLiquidationEntry
+    {
+        public string Particulars { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public IBrowserFile? Receipt { get; set; }
+        public string? ReceiptName { get; set; }
     }
 }

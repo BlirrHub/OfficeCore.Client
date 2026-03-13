@@ -35,6 +35,7 @@ public class LiquidationDto
 
 public class CreateLiquidationRequest
 {
+    public Guid? UserId { get; set; }
     public DateOnly Date { get; set; }
     public decimal PettyCashReceived { get; set; }
     public Guid? IssuedBy { get; set; }
