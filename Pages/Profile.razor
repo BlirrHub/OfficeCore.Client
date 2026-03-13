@@ -1,0 +1,338 @@
+﻿@page "/profile"
+@using OfficeCore.Client.Models.Dtos
+@inject OfficeCore.Client.Services.Api.AuthApi AuthApi
+@inject OfficeCore.Client.Services.State.AuthState AuthState
+@inject NavigationManager Nav
+
+<div class="flex h-[calc(100vh-120px)] flex-col overflow-auto rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5">
+    @if (isLoading)
+    {
+        <div class="flex h-full items-center justify-center">
+            <div class="flex flex-col items-center gap-3 text-center">
+                <svg class="h-10 w-10 animate-spin text-amber-400" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="text-sm text-neutral-400">Loading your profile...</p>
+            </div>
+        </div>
+    }
+    else if (profile == null)
+    {
+        <div class="flex h-full items-center justify-center">
+            <div class="max-w-sm rounded-2xl border border-red-500/20 bg-red-500/5 p-6 text-center">
+                <p class="text-base font-semibold text-red-300">Could not load profile</p>
+                <p class="mt-2 text-sm text-neutral-400">The profile endpoint did not return data.</p>
+                <button @onclick="LoadProfile" class="mt-5 rounded-xl border border-neutral-700 bg-neutral-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-neutral-800">
+                    Try again
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Hero -->
+        <section class="rounded-3xl border border-neutral-800 bg-[radial-gradient(circle_at_top_left,_rgba(245,158,11,0.1),_transparent_35%),linear-gradient(135deg,_rgba(23,23,23,0.98),_rgba(10,10,10,1))] p-4 sm:p-6">
+            <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-center gap-5">
+                    <!-- Avatar -->
+                    <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-amber-400/20 bg-amber-400/10 text-2xl font-bold text-amber-300">
+                        @GetInitials()
+                    </div>
+                    <div>
+                        <p class="text-xs uppercase tracking-[0.18em] text-neutral-500">Your account</p>
+                        <h1 class="mt-1 text-2xl font-semibold text-white">@GetDisplayName()</h1>
+                        <p class="mt-1 text-sm text-neutral-400">@@@profile.Username</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <span class="rounded-full border @GetUserTypeBorderColor() @GetUserTypeBgColor() px-3 py-1 text-xs font-medium @GetUserTypeTextColor()">
+                        @profile.UserType
+                    </span>
+                    @if (profile.IsActive)
+                    {
+                        <span class="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">Active</span>
+                    }
+                    else
+                    {
+                        <span class="rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1 text-xs font-medium text-red-300">Inactive</span>
+                    }
+                    @if (profile.IsOTEnabled)
+                    {
+                        <span class="rounded-full border border-sky-500/25 bg-sky-500/10 px-3 py-1 text-xs font-medium text-sky-300">OT Enabled</span>
+                    }
+                </div>
+            </div>
+
+            @if (profile.Roles.Any())
+            {
+                <div class="mt-5 flex flex-wrap gap-2">
+                    @foreach (var role in profile.Roles)
+                    {
+                        <span class="rounded-full border border-neutral-700 bg-neutral-900/80 px-3 py-1 text-xs text-neutral-300">@role</span>
+                    }
+                </div>
+            }
+        </section>
+
+        <div class="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(280px,1fr)]">
+            <!-- Left column -->
+            <div class="grid gap-4 content-start">
+                @if (HasEmployeeProfile())
+                {
+                    <!-- Employee details -->
+                    <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                        <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Employee details</p>
+                        <h2 class="mt-2 text-xl font-semibold text-white">Work information</h2>
+
+                        <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Full name</p>
+                                <p class="mt-2 text-base font-medium text-white">@profile.FirstName @profile.LastName</p>
+                            </div>
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Department</p>
+                                <p class="mt-2 text-base font-medium text-white">@(profile.Department ?? "—")</p>
+                            </div>
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Position</p>
+                                <p class="mt-2 text-base font-medium text-white">@(profile.Position ?? "—")</p>
+                            </div>
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Biometric ID</p>
+                                <p class="mt-2 text-base font-medium text-white">@(profile.BiometricId?.ToString() ?? "—")</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Schedule in</p>
+                                <p class="mt-2 text-base font-medium text-white">@FormatTime(profile.SchedTimeIn)</p>
+                            </div>
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Schedule out</p>
+                                <p class="mt-2 text-base font-medium text-white">@FormatTime(profile.SchedTimeOut)</p>
+                            </div>
+                            <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                                <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Daily rate</p>
+                                <p class="mt-2 text-base font-medium text-white">@FormatRate(profile.DailyRate)</p>
+                            </div>
+                        </div>
+                    </section>
+                }
+
+                <!-- Change password -->
+                <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Security</p>
+                    <h2 class="mt-2 text-xl font-semibold text-white">Change password</h2>
+
+                    @if (!string.IsNullOrEmpty(passwordMessage))
+                    {
+                        <div class="mt-4 rounded-2xl border @(passwordSuccess ? "border-emerald-500/20 bg-emerald-500/10" : "border-red-500/20 bg-red-500/10") p-4">
+                            <p class="text-sm @(passwordSuccess ? "text-emerald-300" : "text-red-300")">@passwordMessage</p>
+                        </div>
+                    }
+
+                    <div class="mt-5 space-y-4">
+                        <div>
+                            <label class="mb-2 block text-xs uppercase tracking-[0.16em] text-neutral-500">Current password</label>
+                            <input type="password" @bind="currentPassword"
+                                   class="w-full rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-sm text-white placeholder-neutral-600 focus:border-amber-400/50 focus:outline-none"
+                                   placeholder="Enter current password" />
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs uppercase tracking-[0.16em] text-neutral-500">New password</label>
+                            <input type="password" @bind="newPassword"
+                                   class="w-full rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-sm text-white placeholder-neutral-600 focus:border-amber-400/50 focus:outline-none"
+                                   placeholder="At least 8 characters" />
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-xs uppercase tracking-[0.16em] text-neutral-500">Confirm new password</label>
+                            <input type="password" @bind="confirmPassword"
+                                   class="w-full rounded-xl border border-neutral-700 bg-neutral-950 px-4 py-3 text-sm text-white placeholder-neutral-600 focus:border-amber-400/50 focus:outline-none"
+                                   placeholder="Re-enter new password" />
+                        </div>
+                        <button @onclick="ChangePassword"
+                                disabled="@isChangingPassword"
+                                class="rounded-xl bg-amber-400 px-5 py-2.5 text-sm font-medium text-black transition hover:bg-amber-300 disabled:opacity-50">
+                            @(isChangingPassword ? "Updating..." : "Update password")
+                        </button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right column -->
+            <div class="grid gap-4 content-start">
+                <!-- Account details -->
+                <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Account details</p>
+                    <h2 class="mt-2 text-xl font-semibold text-white">System information</h2>
+
+                    <div class="mt-5 space-y-3">
+                        <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                            <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Username</p>
+                            <p class="mt-2 text-base font-medium text-white">@@@profile.Username</p>
+                        </div>
+                        <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                            <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Account type</p>
+                            <p class="mt-2 text-base font-medium text-white">@profile.UserType</p>
+                        </div>
+                        <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                            <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Member since</p>
+                            <p class="mt-2 text-base font-medium text-white">@profile.CreatedAt.LocalDateTime.ToString("MMMM dd, yyyy")</p>
+                        </div>
+                        <div class="rounded-2xl border border-neutral-800 bg-neutral-950 p-4">
+                            <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Account status</p>
+                            <p class="mt-2 text-base font-medium @(profile.IsActive ? "text-emerald-300" : "text-red-300")">@(profile.IsActive ? "Active" : "Inactive")</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Quick nav -->
+                <section class="rounded-3xl border border-neutral-800 bg-neutral-900 p-5">
+                    <p class="text-xs uppercase tracking-[0.16em] text-neutral-500">Navigation</p>
+                    <h2 class="mt-2 text-xl font-semibold text-white">Quick access</h2>
+
+                    <div class="mt-5 grid gap-3">
+                        @if (AuthState.UserType == "Admin")
+                        {
+                            <button @onclick='() => Nav.NavigateTo("/admin/dashboard")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Dashboard</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                            <button @onclick='() => Nav.NavigateTo("/admin/settings")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Settings</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                        }
+                        else
+                        {
+                            <button @onclick='() => Nav.NavigateTo("/app/dashboard")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Dashboard</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                            <button @onclick='() => Nav.NavigateTo("/app/my-tasks")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">My Tasks</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                            <button @onclick='() => Nav.NavigateTo("/app/cash-advances")' class="flex items-center justify-between rounded-2xl border border-neutral-800 bg-neutral-950 px-4 py-3 text-left transition hover:border-neutral-600 hover:bg-neutral-900">
+                                <span class="text-sm font-medium text-white">Cash Advances</span>
+                                <span class="text-xs uppercase tracking-[0.14em] text-neutral-500">Open</span>
+                            </button>
+                        }
+                    </div>
+                </section>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private UserProfileDto? profile;
+    private bool isLoading = true;
+
+    private string currentPassword = string.Empty;
+    private string newPassword = string.Empty;
+    private string confirmPassword = string.Empty;
+    private bool isChangingPassword = false;
+    private string? passwordMessage;
+    private bool passwordSuccess;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        isLoading = true;
+        profile = await AuthApi.GetMyProfileAsync();
+        isLoading = false;
+    }
+
+    private async Task ChangePassword()
+    {
+        passwordMessage = null;
+
+        if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+        {
+            passwordMessage = "All password fields are required.";
+            passwordSuccess = false;
+            return;
+        }
+
+        if (newPassword != confirmPassword)
+        {
+            passwordMessage = "New password and confirmation do not match.";
+            passwordSuccess = false;
+            return;
+        }
+
+        if (newPassword.Length < 8)
+        {
+            passwordMessage = "New password must be at least 8 characters.";
+            passwordSuccess = false;
+            return;
+        }
+
+        isChangingPassword = true;
+
+        var result = await AuthApi.ChangePasswordAsync(new ChangePasswordRequest
+        {
+            CurrentPassword = currentPassword,
+            NewPassword = newPassword
+        });
+
+        isChangingPassword = false;
+
+        if (result == null)
+        {
+            passwordMessage = "Current password is incorrect or the request failed.";
+            passwordSuccess = false;
+        }
+        else
+        {
+            passwordMessage = "Password updated successfully.";
+            passwordSuccess = true;
+            currentPassword = string.Empty;
+            newPassword = string.Empty;
+            confirmPassword = string.Empty;
+        }
+    }
+
+    private bool HasEmployeeProfile() =>
+        !string.IsNullOrEmpty(profile?.FirstName) || !string.IsNullOrEmpty(profile?.LastName)
+        || !string.IsNullOrEmpty(profile?.Department) || !string.IsNullOrEmpty(profile?.Position);
+
+    private string GetDisplayName()
+    {
+        if (profile == null) return string.Empty;
+        var full = $"{profile.FirstName} {profile.LastName}".Trim();
+        return string.IsNullOrEmpty(full) ? profile.Username : full;
+    }
+
+    private string GetInitials()
+    {
+        if (profile == null) return "?";
+        if (!string.IsNullOrEmpty(profile.FirstName) && !string.IsNullOrEmpty(profile.LastName))
+            return $"{profile.FirstName[0]}{profile.LastName[0]}".ToUpper();
+        if (!string.IsNullOrEmpty(profile.Username) && profile.Username.Length >= 1)
+            return profile.Username[0].ToString().ToUpper();
+        return "?";
+    }
+
+    private string GetUserTypeBorderColor() =>
+        profile?.UserType == "Admin" ? "border-amber-500/25" : "border-sky-500/25";
+
+    private string GetUserTypeBgColor() =>
+        profile?.UserType == "Admin" ? "bg-amber-500/10" : "bg-sky-500/10";
+
+    private string GetUserTypeTextColor() =>
+        profile?.UserType == "Admin" ? "text-amber-300" : "text-sky-300";
+
+    private static string FormatTime(TimeOnly? time) =>
+        time.HasValue ? time.Value.ToString("h:mm tt") : "—";
+
+    private static string FormatRate(decimal? rate) =>
+        rate.HasValue ? $"₱{rate.Value:N2}" : "—";
+}

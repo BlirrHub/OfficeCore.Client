@@ -22,6 +22,21 @@ public class AuthApi
         return await response.Content.ReadFromJsonAsync<LoginResponse>();
     }
 
+    public async Task<UserProfileDto?> GetMyProfileAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.GetAsync("api/auth/me");
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<UserProfileDto>();
+    }
+
     public async Task<ChangePasswordResponse?> ChangePasswordAsync(ChangePasswordRequest request)
     {
         if (string.IsNullOrWhiteSpace(_auth.AccessToken))
