@@ -1,11 +1,13 @@
 ﻿@using OfficeCore.Client.Components.Common
 @inherits LayoutComponentBase
+@implements IDisposable
+@inject NavigationManager Navigation
 
 <SessionTimeoutMonitor />
 
 <div class="min-h-screen bg-neutral-950">
     <!-- Top bar -->
-    <header class="h-14 bg-neutral-900 border-b flex items-center justify-between px-4">
+    <header class="sticky top-0 z-50 h-14 bg-neutral-900 border-b flex items-center justify-between px-4">
         <div class="flex items-center gap-3">
             <!-- Mobile menu button -->
             <button class="lg:hidden text-white p-2 hover:bg-gray-800 rounded" @onclick="ToggleMobileMenu">
@@ -30,7 +32,7 @@
         <!-- Mobile overlay -->
         @if (isMobileMenuOpen)
         {
-            <div class="fixed inset-0 bg-black bg-opacity-50 z-30 lg:hidden" @onclick="ToggleMobileMenu"></div>
+            <div class="fixed top-14 left-0 right-0 bottom-0 bg-black/45 z-30 lg:hidden" @onclick="ToggleMobileMenu"></div>
         }
 
         <!-- Sidebar -->
@@ -48,9 +50,25 @@
 @code {
     private bool isMobileMenuOpen = false;
 
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += HandleLocationChanged;
+    }
+
     private void ToggleMobileMenu()
     {
         isMobileMenuOpen = !isMobileMenuOpen;
+    }
+
+    private void HandleLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        if (!isMobileMenuOpen)
+        {
+            return;
+        }
+
+        isMobileMenuOpen = false;
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private string GetSidebarClasses()
@@ -60,5 +78,10 @@
         var transformClass = isMobileMenuOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0";
         
         return $"{baseClasses} {mobileClasses} {transformClass}";
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= HandleLocationChanged;
     }
 }
