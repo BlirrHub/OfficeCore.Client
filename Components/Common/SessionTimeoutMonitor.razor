@@ -1,36 +1,37 @@
-@using OfficeCore.Client.Services.State
+﻿@using OfficeCore.Client.Services.State
 @using OfficeCore.Client.Services.Utilities
 @inject AuthState AuthState
 @inject NavigationManager Navigation
 @implements IAsyncDisposable
 
 @code {
-    private PeriodicTimer? _timer;
+    private CancellationTokenSource? _cancellationTokenSource;
     private const int CheckIntervalSeconds = 30; // Check every 30 seconds
 
     protected override async Task OnInitializedAsync()
     {
-        _timer = new PeriodicTimer(TimeSpan.FromSeconds(CheckIntervalSeconds));
+        _cancellationTokenSource = new CancellationTokenSource();
 
         // Check on initialization
         await CheckTokenExpiration();
 
         // Start periodic checks
-        _ = MonitorTokenAsync();
+        _ = MonitorTokenAsync(_cancellationTokenSource.Token);
     }
 
-    private async Task MonitorTokenAsync()
+    private async Task MonitorTokenAsync(CancellationToken cancellationToken)
     {
         try
         {
-            while (await _timer!.WaitForNextTickAsync())
+            while (!cancellationToken.IsCancellationRequested)
             {
+                await Task.Delay(TimeSpan.FromSeconds(CheckIntervalSeconds), cancellationToken);
                 await CheckTokenExpiration();
             }
         }
         catch (OperationCanceledException)
         {
-            // Timer was disposed
+            // Cancellation requested, stop monitoring
         }
     }
 
@@ -47,9 +48,10 @@
 
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
-        if (_timer is not null)
+        if (_cancellationTokenSource is not null)
         {
-            await _timer.DisposeAsync();
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
         }
     }
 }

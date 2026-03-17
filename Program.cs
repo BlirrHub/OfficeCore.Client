@@ -11,7 +11,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://192.168.100.100:5000/";
+var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://192.168.0.100:5000/";
 builder.Services.AddScoped(_ => 
     new HttpClient { BaseAddress = new Uri(apiUrl) });
 
