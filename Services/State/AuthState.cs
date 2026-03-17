@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.JSInterop;
+using OfficeCore.Client.Services.Utilities;
 
 namespace OfficeCore.Client.Services.State;
 
@@ -13,7 +14,9 @@ public class AuthState
     public string? UserType { get; private set; }
     public IReadOnlyList<string> Roles { get; private set; } = new List<string>();
 
-    public bool IsAuthenticated => !string.IsNullOrEmpty(AccessToken);
+    public bool IsAuthenticated => !string.IsNullOrEmpty(AccessToken) && !JwtHelper.IsTokenExpired(AccessToken);
+    
+    public bool IsTokenExpired => JwtHelper.IsTokenExpired(AccessToken);
 
     public void Set(string token, string userType, IReadOnlyList<string> roles)
     {
@@ -53,9 +56,10 @@ public class AuthState
         if (js is null) return;
 
         var token = await js.InvokeAsync<string?>("localStorage.getItem", TokenKey);
-        if (string.IsNullOrEmpty(token))
+        if (string.IsNullOrEmpty(token) || JwtHelper.IsTokenExpired(token))
         {
             Clear();
+            await SaveAsync(js);
             return;
         }
 

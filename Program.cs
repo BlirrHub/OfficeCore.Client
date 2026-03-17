@@ -5,12 +5,13 @@ using System.Net.Http.Headers;
 using Microsoft.JSInterop;
 using OfficeCore.Client.Services.Api;
 using OfficeCore.Client.Services.State;
+using OfficeCore.Client.Services.Utilities;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://192.168.100.3:5000/";
+var apiUrl = builder.Configuration["ApiBaseUrl"] ?? "http://192.168.100.100:5000/";
 builder.Services.AddScoped(_ => 
     new HttpClient { BaseAddress = new Uri(apiUrl) });
 

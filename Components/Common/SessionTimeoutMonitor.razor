@@ -1,0 +1,55 @@
+@using OfficeCore.Client.Services.State
+@using OfficeCore.Client.Services.Utilities
+@inject AuthState AuthState
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+@code {
+    private PeriodicTimer? _timer;
+    private const int CheckIntervalSeconds = 30; // Check every 30 seconds
+
+    protected override async Task OnInitializedAsync()
+    {
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(CheckIntervalSeconds));
+
+        // Check on initialization
+        await CheckTokenExpiration();
+
+        // Start periodic checks
+        _ = MonitorTokenAsync();
+    }
+
+    private async Task MonitorTokenAsync()
+    {
+        try
+        {
+            while (await _timer!.WaitForNextTickAsync())
+            {
+                await CheckTokenExpiration();
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Timer was disposed
+        }
+    }
+
+    private Task CheckTokenExpiration()
+    {
+        if (AuthState.IsTokenExpired)
+        {
+            AuthState.Clear();
+            Navigation.NavigateTo("/auth/login", forceLoad: true);
+        }
+
+        return Task.CompletedTask;
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (_timer is not null)
+        {
+            await _timer.DisposeAsync();
+        }
+    }
+}
