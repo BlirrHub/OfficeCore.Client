@@ -1,106 +1,127 @@
 @using OfficeCore.Client.Models.Dtos
-@using OfficeCore.Client.Components.Common
-@using OfficeCore.Client.Components.Forms
 @using static OfficeCore.Client.Components.Forms.ComboBox<Guid?>
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
 @inject OfficeCore.Client.Services.Api.TaskAdminApi TaskAdminApi
 
-<Modal IsOpen="IsOpen" IsOpenChanged="IsOpenChanged" Title="Create Task" Size="Modal.ModalSize.Large">
-    <div class="grid grid-cols-1 gap-4">
+@if (IsOpen)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" @onclick="Cancel">
+        <div class="my-8 max-h-[90vh] w-full max-w-4xl overflow-auto rounded-3xl border border-neutral-800 bg-neutral-950 shadow-2xl" @onclick:stopPropagation="true">
+            <div class="flex items-center justify-between gap-4 border-b border-neutral-800 px-6 py-4">
+                <h2 class="text-xl font-semibold text-white">Create Task</h2>
+                <button type="button" class="text-neutral-500 transition hover:text-neutral-300" @onclick="Cancel">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="max-h-[calc(90vh-88px)] overflow-y-auto px-6 py-4">
+                <div class="grid grid-cols-1 gap-4">
         
         <div>
-            <label class="text-sm text-gray-300 font-medium mb-1 block">Title *</label>
-            <input class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <label class="mb-1 block text-sm font-medium text-neutral-300">Title *</label>
+            <input class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500" 
                    placeholder="Task title" 
                    maxlength="200"
                    @bind="Request.Title" />
         </div>
 
         <div>
-            <label class="text-sm text-gray-300 font-medium mb-1 block">Description *</label>
-            <textarea class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]" 
+            <label class="mb-1 block text-sm font-medium text-neutral-300">Description *</label>
+            <textarea class="min-h-[100px] w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500" 
                       placeholder="Describe the task in detail..." 
                       maxlength="2000"
                       @bind="Request.Description"></textarea>
-            <p class="text-xs text-gray-400 mt-1">@Request.Description.Length / 2000 characters</p>
+            <p class="mt-1 text-xs text-neutral-500">@Request.Description.Length / 2000 characters</p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
             <div>
-                <label class="text-sm text-gray-300 font-medium mb-1 block">Start Date (Optional)</label>
+                <label class="mb-1 block text-sm font-medium text-neutral-300">Start Date (Optional)</label>
                 <input type="date" 
-                       class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" 
                        value="@(Request.StartDate?.ToString("yyyy-MM-dd"))"
                        @onchange="@(e => Request.StartDate = DateOnly.TryParse(e.Value?.ToString(), out var d) ? d : null)" />
             </div>
             <div>
-                <label class="text-sm text-gray-300 font-medium mb-1 block">Due Date (Optional)</label>
+                <label class="mb-1 block text-sm font-medium text-neutral-300">Due Date (Optional)</label>
                 <input type="date" 
-                       class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                       class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" 
                        value="@(Request.DueDate?.ToString("yyyy-MM-dd"))"
                        @onchange="@(e => Request.DueDate = DateOnly.TryParse(e.Value?.ToString(), out var d) ? d : null)" />
             </div>
         </div>
 
         <div>
-            <label class="text-sm text-gray-300 font-medium mb-1 block">Priority *</label>
-            <select class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <label class="mb-1 block text-sm font-medium text-neutral-300">Priority *</label>
+            <select class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" 
                     @bind="Request.Priority">
-                <option value="1" class="bg-gray-800">Critical</option>
-                <option value="2" class="bg-gray-800">High</option>
-                <option value="3" class="bg-gray-800" selected>Normal</option>
-                <option value="4" class="bg-gray-800">Low</option>
+                <option value="1" class="bg-neutral-900">Critical</option>
+                <option value="2" class="bg-neutral-900">High</option>
+                <option value="3" class="bg-neutral-900" selected>Normal</option>
+                <option value="4" class="bg-neutral-900">Low</option>
             </select>
         </div>
 
         <div>
-            <label class="text-sm text-gray-300 font-medium mb-1 block">Assignment Type *</label>
-            <select class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" 
+            <label class="mb-1 block text-sm font-medium text-neutral-300">Assignment Type *</label>
+            <select class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" 
                     @bind="Request.AssignmentType"
                     @bind:after="OnAssignmentTypeChanged">
-                <option value="1" class="bg-gray-800" selected>Assign to Individual</option>
-                <option value="2" class="bg-gray-800">Open to All Employees (Task Pool)</option>
+                <option value="1" class="bg-neutral-900" selected>Assign to Individual</option>
+                <option value="2" class="bg-neutral-900">Open to All Employees (Task Pool)</option>
             </select>
         </div>
 
-        @if (Request.AssignmentType == 1)
-        {
-            <ComboBox TValue="Guid?"
-                      Label="Assign to Employee *"
-                      Placeholder="Select employee..."
-                      @bind-Value="Request.AssignedToUserId"
-                      Options="@employeeOptions" />
-        }
-        else
-        {
-            <div class="bg-blue-900/20 border border-blue-700 rounded-lg p-3">
-                <p class="text-sm text-blue-300">
-                    <strong>Task Pool:</strong> This task will be visible to all employees. They can claim it on a first-come, first-served basis.
-                </p>
-            </div>
-        }
+                    @if (Request.AssignmentType == 1)
+                    {
+                        <div>
+                            <label class="mb-1 block text-sm font-medium text-neutral-300">Assign to Employee *</label>
+                            <select class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"
+                                    value="@(Request.AssignedToUserId?.ToString() ?? string.Empty)"
+                                    @onchange="OnAssignedUserChanged">
+                                <option value="" class="bg-neutral-900 text-neutral-500">Select employee...</option>
+                                @foreach (var employee in employeeOptions)
+                                {
+                                    <option value="@employee.Value" class="bg-neutral-900 text-white">@employee.Text</option>
+                                }
+                            </select>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="rounded-2xl border border-sky-400/30 bg-sky-500/10 p-3">
+                            <p class="text-sm text-sky-200">
+                                <strong>Task Pool:</strong> This task will be visible to all employees. They can claim it on a first-come, first-served basis.
+                            </p>
+                        </div>
+                    }
 
-        @if (!string.IsNullOrWhiteSpace(Message))
-        {
-            <div class="text-sm @(IsError ? "text-red-400" : "text-green-400") bg-gray-800 border @(IsError ? "border-red-700" : "border-green-700") rounded-lg p-3">
-                @Message
-            </div>
-        }
+                    @if (!string.IsNullOrWhiteSpace(Message))
+                    {
+                        <div class="rounded-2xl border px-4 py-3 text-sm @(IsError ? "border-red-500/30 bg-red-500/10 text-red-200" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200")">
+                            @Message
+                        </div>
+                    }
 
-        <div class="flex gap-2 pt-2">
-            <button class="bg-blue-600 text-white rounded-lg py-2 px-4 flex-1 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    @onclick="CreateTask"
-                    disabled="@IsSubmitting">
-                @(IsSubmitting ? "Creating..." : "Create Task")
-            </button>
-            <button class="border border-gray-600 rounded-lg py-2 px-4 text-gray-200 hover:bg-gray-800 transition-colors"
-                    @onclick="Cancel"
-                    disabled="@IsSubmitting">
-                Cancel
-            </button>
+                    <div class="flex justify-end gap-3 pt-2">
+                        <button class="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-900 disabled:cursor-not-allowed disabled:opacity-60"
+                                @onclick="Cancel"
+                                disabled="@IsSubmitting">
+                            Cancel
+                        </button>
+                        <button class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-5 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30 disabled:cursor-not-allowed disabled:opacity-60"
+                                @onclick="CreateTask"
+                                disabled="@IsSubmitting">
+                            @(IsSubmitting ? "Creating..." : "Create Task")
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
-</Modal>
+}
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
@@ -150,6 +171,12 @@
         {
             Request.AssignedToUserId = null;
         }
+    }
+
+    private void OnAssignedUserChanged(ChangeEventArgs args)
+    {
+        var value = args.Value?.ToString();
+        Request.AssignedToUserId = Guid.TryParse(value, out var userId) ? userId : null;
     }
 
     private async Task CreateTask()

@@ -31,6 +31,21 @@ public class CashAdvanceAdminApi
         return await response.Content.ReadFromJsonAsync<List<CashAdvanceDto>>();
     }
 
+    public async Task<CashAdvanceDto?> CreateRequestAsync(Guid userId, CreateCashAdvanceRequest request)
+    {
+        if (string.IsNullOrWhiteSpace(_auth.AccessToken))
+            return null;
+
+        _http.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _auth.AccessToken);
+
+        var response = await _http.PostAsJsonAsync($"api/admin/cash-advances/request/{userId}", request);
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return await response.Content.ReadFromJsonAsync<CashAdvanceDto>();
+    }
+
     public async Task<List<CashAdvanceDto>?> GetRequestsAsync(DateOnly? startDate = null, DateOnly? endDate = null, int? status = null)
     {
         if (string.IsNullOrWhiteSpace(_auth.AccessToken))

@@ -2,8 +2,10 @@
 @attribute [Authorize(Roles = "Admin")]
 @using OfficeCore.Client.Models.Dtos
 @using OfficeCore.Client.Services.Api
+@using OfficeCore.Client.Features.Employees
 @inject CashAdvanceAdminApi CashAdvanceApi
 @inject PettyCashAdminApi PettyCashApi
+@inject AdminApi AdminApi
 @implements IDisposable
 
 <div class="h-[calc(100vh-120px)] rounded-2xl border border-neutral-800 bg-neutral-950 p-3 sm:p-5 flex flex-col">
@@ -12,11 +14,16 @@
             <h1 class="text-xl sm:text-3xl text-white font-semibold tracking-tight">Cash Advance Requests</h1>
             <p class="mt-1 text-xs sm:text-sm text-neutral-400">Review and decide pending requests with live queue visibility.</p>
         </div>
-        <div class="flex items-center gap-2 text-xs text-gray-400">
-            <svg class="w-4 h-4 animate-pulse text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
-            </svg>
-            <span>Auto-refresh active</span>
+        <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2 text-xs text-gray-400">
+                <svg class="w-4 h-4 animate-pulse text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Auto-refresh active</span>
+            </div>
+            <button @onclick="OpenCreateModal" class="rounded-lg border border-amber-400/40 bg-amber-400/20 px-4 sm:px-6 py-2 whitespace-nowrap text-amber-200 transition hover:bg-amber-400/30">
+                Create Cash Advance
+            </button>
         </div>
     </div>
 
@@ -240,23 +247,91 @@
     </div>
 }
 
+@if (showCreateModal)
+{
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" @onclick="CloseCreateModal">
+        <div class="my-8 w-full max-w-2xl rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl" @onclick:stopPropagation="true">
+            <div class="mb-6 flex items-start justify-between gap-4">
+                <div>
+                    <h3 class="text-xl font-semibold text-white">Create Cash Advance</h3>
+                    <p class="mt-1 text-sm text-neutral-400">Create a new cash advance request on behalf of an employee.</p>
+                </div>
+                <button @onclick="CloseCreateModal" class="text-neutral-500 transition hover:text-neutral-300">
+                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(createMessage))
+            {
+                <div class="mb-4 rounded-2xl border px-4 py-3 text-sm @(createIsError ? "border-red-500/30 bg-red-500/10 text-red-200" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200")">
+                    @createMessage
+                </div>
+            }
+
+            <div class="grid gap-4 md:grid-cols-2">
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Employee</label>
+                    <select @bind="createUserId" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white">
+                        <option value="">Select an employee</option>
+                        @foreach (var employee in employees)
+                        {
+                            <option value="@employee.Id">@employee.FirstName @employee.LastName (@(employee.Department ?? "No Department"))</option>
+                        }
+                    </select>
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Request Date</label>
+                    <input type="date" @bind="createRequest.RequestDate" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
+                </div>
+                <div>
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Amount</label>
+                    <input type="number" step="0.01" min="0" @bind="createRequest.Amount" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
+                </div>
+                <div class="md:col-span-2">
+                    <label class="mb-1 block text-sm font-medium text-neutral-300">Reason</label>
+                    <textarea @bind="createRequest.Reason" rows="3" class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" placeholder="Why is this cash advance needed?"></textarea>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3">
+                <button @onclick="CloseCreateModal" disabled="@isCreating" class="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-900 disabled:opacity-50">
+                    Cancel
+                </button>
+                <button @onclick="CreateCashAdvance" disabled="@isCreating" class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-5 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30 disabled:opacity-50">
+                    @(isCreating ? "Creating..." : "Create CA")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<CashAdvanceDto>? cashAdvances;
     private List<CashAdvanceDto>? filteredRequests;
+    private List<Employee> employees = new();
     private CashAdvanceDto? selectedRequest;
     private bool isLoading;
     private bool isSaving;
+    private bool isCreating;
+    private bool showCreateModal;
     private int activeTab = 1; // 1=Pending, 2=Approved, 3=Rejected, 4=Claimed, -1=All
     private int pendingCount = 0;
     private int approvedCount = 0;
     private DateOnly? startDate;
     private DateOnly? endDate;
+    private Guid? createUserId;
+    private CreateCashAdvanceRequest createRequest = new() { RequestDate = DateOnly.FromDateTime(DateTime.Today) };
+    private string? createMessage;
+    private bool createIsError;
     private PeriodicTimer? _refreshTimer;
     private CancellationTokenSource? _cts;
 
     protected override async Task OnInitializedAsync()
     {
         // Don't set default dates - show all requests
+        await LoadEmployees();
         await LoadRequests();
         
         // Start auto-refresh every 10 seconds
@@ -310,6 +385,15 @@
         isLoading = false;
     }
 
+    private async Task LoadEmployees()
+    {
+        employees = await AdminApi.GetAllEmployeesAsync() ?? new List<Employee>();
+        employees = employees
+            .OrderBy(e => e.FirstName)
+            .ThenBy(e => e.LastName)
+            .ToList();
+    }
+
     private void ApplyFilter()
     {
         if (cashAdvances == null)
@@ -332,6 +416,73 @@
     {
         activeTab = tab;
         await LoadRequests();
+    }
+
+    private void OpenCreateModal()
+    {
+        createUserId = null;
+        createRequest = new CreateCashAdvanceRequest { RequestDate = DateOnly.FromDateTime(DateTime.Today) };
+        createMessage = null;
+        createIsError = false;
+        showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        if (isCreating)
+            return;
+
+        showCreateModal = false;
+        createMessage = null;
+        createIsError = false;
+    }
+
+    private async Task CreateCashAdvance()
+    {
+        if (!createUserId.HasValue || createUserId.Value == Guid.Empty)
+        {
+            createIsError = true;
+            createMessage = "Select an employee.";
+            return;
+        }
+
+        if (createRequest.Amount <= 0)
+        {
+            createIsError = true;
+            createMessage = "Amount must be greater than zero.";
+            return;
+        }
+
+        isCreating = true;
+        createMessage = null;
+        createIsError = false;
+
+        try
+        {
+            var created = await CashAdvanceApi.CreateRequestAsync(createUserId.Value, createRequest);
+            if (created is null)
+            {
+                createIsError = true;
+                createMessage = "Failed to create cash advance request.";
+                return;
+            }
+
+            createIsError = false;
+            createMessage = "Cash advance request created successfully.";
+            activeTab = 1;
+            await LoadRequests();
+            selectedRequest = created;
+            showCreateModal = false;
+        }
+        catch (Exception ex)
+        {
+            createIsError = true;
+            createMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isCreating = false;
+        }
     }
 
     private async Task ViewDetails(Guid id)

@@ -16,14 +16,14 @@
                 <h1 class="text-xl sm:text-3xl text-white font-semibold tracking-tight">Daily Liquidations</h1>
                 <p class="mt-1 text-xs sm:text-sm text-neutral-400">Review submissions and keep reconciliation accurate.</p>
             </div>
+        </div>
+        <div class="flex items-center gap-3">
             <div class="flex items-center gap-2 text-xs text-gray-400">
                 <svg class="w-4 h-4 animate-pulse text-green-400" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
                 </svg>
                 <span>Auto-refresh active</span>
             </div>
-        </div>
-        <div class="flex items-center gap-3">
             <button @onclick="OpenManualLiquidationModal"
                     class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-4 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30">
                 Create Liquidation
@@ -157,7 +157,7 @@
         <div class="max-h-[90vh] w-full max-w-4xl overflow-auto rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl" @onclick:stopPropagation="true">
             <div class="mb-6 flex items-start justify-between gap-4">
                 <div>
-                    <h3 class="text-xl font-semibold text-white">Create Manual Liquidation</h3>
+                    <h3 class="text-xl font-semibold text-white">Create Liquidation</h3>
                     <p class="mt-1 text-sm text-neutral-400">Record a liquidation directly for an employee when it was prepared outside the mobile workflow.</p>
                 </div>
                 <button @onclick="CloseManualLiquidationModal" class="text-neutral-500 transition hover:text-neutral-300">

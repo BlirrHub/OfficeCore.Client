@@ -134,65 +134,75 @@ else
 
     @if (showCreateModal || showEditModal)
     {
-        <div class="fixed inset-0 backdrop-blur-md bg-black/30 flex items-center justify-center z-50" @onclick="CloseClientModal">
-            <div class="bg-gray-900 rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto shadow-2xl border border-neutral-900" @onclick:stopPropagation>
-                <h2 class="text-xl font-bold text-white mb-4">@(showEditModal ? "Edit Client" : "Create Client")</h2>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" @onclick="CloseClientModal">
+            <div class="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl" @onclick:stopPropagation>
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">@(showEditModal ? "Edit Client" : "Create Client")</h2>
+                        <p class="mt-1 text-sm text-neutral-400">Capture client identity and the primary business details in one place.</p>
+                    </div>
+                    <button @onclick="CloseClientModal" class="text-neutral-500 transition hover:text-neutral-300">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">First Name</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">First Name</label>
                         <input @bind-value="currentClient.FirstName" 
                                @bind-value:event="oninput"
-                               class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500" />
+                               class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Last Name</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Last Name</label>
                         <input @bind-value="currentClient.LastName" 
                                @bind-value:event="oninput"
-                               class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500" />
+                               class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Business Name</label>
                         <input @bind-value="newBusinessName" 
                                @bind-value:event="oninput"
-                               class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500" />
+                               class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Address</label>
                         <textarea @bind-value="newBusinessAddress" 
                                   @bind-value:event="oninput"
                                   rows="2"
-                                  class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500"></textarea>
+                                  class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"></textarea>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Contact Number</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Contact Number</label>
                         <input @bind-value="currentClient.ContactNumber" 
                                @bind-value:event="oninput"
-                               class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500" />
+                               class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Status</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Status</label>
                         <select @bind="currentClient.Status" 
-                                class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500">
-                            <option value="Active" class="bg-gray-800">Active</option>
-                            <option value="Inactive" class="bg-gray-800">Inactive</option>
+                                class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white">
+                            <option value="Active" class="bg-neutral-900">Active</option>
+                            <option value="Inactive" class="bg-neutral-900">Inactive</option>
                         </select>
                     </div>
                 </div>
                 
-                <div class="flex gap-2 mt-6">
-                    <button @onclick="SaveClient" 
-                            class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                        Save
-                    </button>
+                <div class="mt-6 flex justify-end gap-3">
                     <button @onclick="CloseClientModal" 
-                            class="flex-1 border border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-800 text-gray-200 transition-colors">
+                            class="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-900">
                         Cancel
+                    </button>
+                    <button @onclick="SaveClient" 
+                            class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-5 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30">
+                        Save
                     </button>
                 </div>
             </div>
@@ -201,35 +211,45 @@ else
 
     @if (showBusinessModal)
     {
-        <div class="fixed inset-0 backdrop-blur-md bg-black/30 flex items-center justify-center z-50" @onclick="CloseBusinessModal">
-            <div class="bg-gray-900 rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl border border-neutral-900" @onclick:stopPropagation>
-                <h2 class="text-xl font-bold text-white mb-4">Add Business</h2>
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" @onclick="CloseBusinessModal">
+            <div class="w-full max-w-md rounded-3xl border border-neutral-800 bg-neutral-950 p-6 shadow-2xl" @onclick:stopPropagation>
+                <div class="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Add Business</h2>
+                        <p class="mt-1 text-sm text-neutral-400">Attach another business record to this client.</p>
+                    </div>
+                    <button @onclick="CloseBusinessModal" class="text-neutral-500 transition hover:text-neutral-300">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Business Name</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Business Name</label>
                         <input @bind-value="newBusinessName" 
                                @bind-value:event="oninput"
-                               class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500" />
+                               class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" />
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-1">Address</label>
+                        <label class="mb-1 block text-sm font-medium text-neutral-300">Address</label>
                         <textarea @bind-value="newBusinessAddress" 
                                   @bind-value:event="oninput"
                                   rows="3"
-                                  class="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-blue-500"></textarea>
+                                  class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white"></textarea>
                     </div>
                 </div>
                 
-                <div class="flex gap-2 mt-6">
-                    <button @onclick="SaveBusiness" 
-                            class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                        Add
-                    </button>
+                <div class="mt-6 flex justify-end gap-3">
                     <button @onclick="CloseBusinessModal" 
-                            class="flex-1 border border-gray-600 px-4 py-2 rounded-lg hover:bg-gray-800 text-gray-200 transition-colors">
+                            class="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-900">
                         Cancel
+                    </button>
+                    <button @onclick="SaveBusiness" 
+                            class="rounded-xl border border-violet-400/40 bg-violet-500/20 px-5 py-2 text-sm font-medium text-violet-200 transition hover:bg-violet-500/30">
+                        Add
                     </button>
                 </div>
             </div>

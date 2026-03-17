@@ -2,6 +2,7 @@
 @inject NavigationManager Nav
 @inject OfficeCore.Client.Services.State.AuthState AuthState
 @inject OfficeCore.Client.Services.Api.AdminApi AdminApi
+@inject OfficeCore.Client.Services.Api.PayrollApi PayrollApi
 @using OfficeCore.Client.Models.Dtos
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -21,6 +22,9 @@ else
             <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-2 flex-wrap rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
                 <button class="rounded-lg border border-sky-400/40 bg-sky-500/20 py-2 px-4 text-sm sm:text-base text-sky-200 transition hover:bg-sky-500/30" @onclick="OpenImportModal">
                     Import Attendance
+                </button>
+                <button class="rounded-lg border border-emerald-400/40 bg-emerald-500/20 py-2 px-4 text-sm sm:text-base text-emerald-200 transition hover:bg-emerald-500/30 disabled:opacity-60 disabled:cursor-not-allowed" @onclick="GeneratePayrollFromLoadedWeek" disabled="@(response is null || isLoading || isGeneratingPayroll)">
+                    @(isGeneratingPayroll ? "Generating Payroll..." : "Generate Payroll")
                 </button>
                 <button class="rounded-lg border border-neutral-600 bg-neutral-800 py-2 px-4 text-sm sm:text-base text-white transition hover:bg-neutral-700" @onclick="@(() => Nav.NavigateTo("/admin/attendance-batches"))">
                     View Import Batches
@@ -425,6 +429,7 @@ else
 @code {
     private WeeklyAttendanceResponse? response;
     private bool isLoading;
+    private bool isGeneratingPayroll;
 
     private string? Message;
     private bool IsError;
@@ -473,6 +478,44 @@ else
         {
             IsError = true;
             Message = "Failed to load weekly attendance.";
+        }
+    }
+
+    private async Task GeneratePayrollFromLoadedWeek()
+    {
+        if (response is null)
+        {
+            IsError = true;
+            Message = "Load weekly attendance first before generating payroll.";
+            return;
+        }
+
+        Message = "Generating payroll from loaded week...";
+        IsError = false;
+        isGeneratingPayroll = true;
+
+        try
+        {
+            var payroll = await PayrollApi.GenerateWeeklyPayrollAsync(response.WeekStart);
+            if (payroll is null)
+            {
+                IsError = true;
+                Message = "Failed to generate payroll.";
+                return;
+            }
+
+            Message = $"Payroll generated for {payroll.Employees.Count} employees for week {response.WeekStart:yyyy-MM-dd}.";
+            IsError = false;
+            Nav.NavigateTo($"/admin/payroll-weekly?weekStart={response.WeekStart:yyyy-MM-dd}");
+        }
+        catch (Exception ex)
+        {
+            IsError = true;
+            Message = $"Error generating payroll: {ex.Message}";
+        }
+        finally
+        {
+            isGeneratingPayroll = false;
         }
     }
 

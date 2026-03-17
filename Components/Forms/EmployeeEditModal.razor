@@ -10,23 +10,23 @@
     @if (isLoading)
     {
         <div class="text-center py-4">
-            <p class="text-gray-300">Loading employee...</p>
+            <p class="text-neutral-300">Loading employee...</p>
         </div>
     }
     else if (employee is null)
     {
         <div class="text-center py-4">
-            <p class="text-gray-400">Employee not found.</p>
+            <p class="text-neutral-500">Employee not found.</p>
         </div>
     }
     else
     {
         <div class="grid grid-cols-1 gap-3">
-            <div class="text-sm text-gray-300">Username: <span class="text-white font-medium">@employee.Username</span></div>
+            <div class="text-sm text-neutral-300">Username: <span class="font-medium text-white">@employee.Username</span></div>
 
             <div class="grid grid-cols-2 gap-3">
-                <input class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="First name" @bind="employee.FirstName" />
-                <input class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Last name" @bind="employee.LastName" />
+                <input class="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500" placeholder="First name" @bind="employee.FirstName" />
+                <input class="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500" placeholder="Last name" @bind="employee.LastName" />
             </div>
 
             <ComboBox TValue="string"
@@ -43,36 +43,36 @@
                       Options="@filteredPositionOptions" />
 
             <div class="grid grid-cols-2 gap-3">
-                <input class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" type="number" placeholder="Biometric ID" @bind="employee.BiometricId" />
-                <input class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500" type="number" step="0.01" placeholder="Daily rate" @bind="employee.DailyRate" />
+                <input class="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500" type="number" placeholder="Biometric ID" @bind="employee.BiometricId" />
+                <input class="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white placeholder:text-neutral-500" type="number" step="0.01" placeholder="Daily rate" @bind="employee.DailyRate" />
             </div>
 
             <div>
-                <label class="text-sm text-gray-300">Schedule</label>
-                <select class="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 w-full text-white focus:outline-none focus:ring-2 focus:ring-blue-500" @bind="SelectedSchedule">
-                    <option value="8-5" class="bg-gray-800">8:00 am - 5:00 pm</option>
-                    <option value="9-6" class="bg-gray-800">9:00 am - 6:00 pm</option>
-                    <option value="none" class="bg-gray-800">None</option>
+                <label class="mb-1 block text-sm font-medium text-neutral-300">Schedule</label>
+                <select class="w-full rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-white" @bind="SelectedSchedule">
+                    <option value="8-5" class="bg-neutral-900">8:00 am - 5:00 pm</option>
+                    <option value="9-6" class="bg-neutral-900">9:00 am - 6:00 pm</option>
+                    <option value="none" class="bg-neutral-900">None</option>
                 </select>
             </div>
 
-            <label class="flex items-center gap-2 text-sm text-gray-200">
+            <label class="flex items-center gap-2 text-sm text-neutral-200">
                 <input type="checkbox" @bind="employee.IsOTEnabled" class="rounded" />
                 OT Enabled
             </label>
 
-            <div class="border border-gray-600 rounded-lg p-3 bg-gray-800">
-                <p class="text-sm font-semibold mb-2 text-gray-200">Government Deductions</p>
+            <div class="rounded-2xl border border-neutral-800 bg-neutral-900 p-4">
+                <p class="mb-2 text-sm font-semibold text-neutral-200">Government Deductions</p>
                 <div class="grid grid-cols-3 gap-2">
-                    <label class="flex items-center gap-2 text-sm text-gray-200">
+                    <label class="flex items-center gap-2 text-sm text-neutral-200">
                         <input type="checkbox" @bind="employee.HasSSSDeduction" class="rounded" />
                         SSS
                     </label>
-                    <label class="flex items-center gap-2 text-sm text-gray-200">
+                    <label class="flex items-center gap-2 text-sm text-neutral-200">
                         <input type="checkbox" @bind="employee.HasPhilHealthDeduction" class="rounded" />
                         PhilHealth
                     </label>
-                    <label class="flex items-center gap-2 text-sm text-gray-200">
+                    <label class="flex items-center gap-2 text-sm text-neutral-200">
                         <input type="checkbox" @bind="employee.HasPagIBIGDeduction" class="rounded" />
                         Pag-IBIG
                     </label>
@@ -80,17 +80,17 @@
             </div>
 
             <div>
-                <label class="text-sm text-gray-300 font-medium">Roles</label>
-                <div class="border border-gray-600 rounded-lg p-3 bg-gray-800 max-h-32 overflow-y-auto">
+                <label class="text-sm font-medium text-neutral-300">Roles</label>
+                <div class="max-h-32 overflow-y-auto rounded-2xl border border-neutral-800 bg-neutral-900 p-3">
                     @if (availableRoles.Count == 0)
                     {
-                        <p class="text-sm text-gray-400">No roles available</p>
+                        <p class="text-sm text-neutral-500">No roles available</p>
                     }
                     else
                     {
                         @foreach (var role in availableRoles)
                         {
-                            <label class="flex items-center gap-2 text-sm mb-1 cursor-pointer text-gray-200">
+                            <label class="mb-1 flex cursor-pointer items-center gap-2 text-sm text-neutral-200">
                                 <input type="checkbox" 
                                        checked="@employee.Roles.Contains(role.Name)"
                                        @onchange="@(e => ToggleRole(role.Name))"
@@ -102,23 +102,23 @@
                 </div>
             </div>
 
-            <label class="flex items-center gap-2 text-sm text-gray-200">
+            <label class="flex items-center gap-2 text-sm text-neutral-200">
                 <input type="checkbox" @bind="employee.IsActive" class="rounded" />
                 Active
             </label>
 
             @if (!string.IsNullOrWhiteSpace(message))
             {
-                <div class="text-sm @(isError ? "text-red-400" : "text-green-400")">@message</div>
+                <div class="rounded-2xl border px-4 py-3 text-sm @(isError ? "border-red-500/30 bg-red-500/10 text-red-200" : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200")">@message</div>
             }
 
-            <div class="flex gap-2">
-                <button class="bg-blue-600 text-white rounded-lg py-2 px-4 flex-1 hover:bg-blue-700 transition-colors" @onclick="Save">
-                    Save
-                </button>
-                <button class="border border-gray-600 rounded-lg py-2 px-4 text-gray-200 hover:bg-gray-800 transition-colors"
+            <div class="flex justify-end gap-3">
+                <button class="rounded-xl border border-neutral-700 px-4 py-2 text-sm text-neutral-300 transition hover:bg-neutral-900"
                         @onclick="Cancel">
                     Cancel
+                </button>
+                <button class="rounded-xl border border-amber-400/40 bg-amber-400/20 px-5 py-2 text-sm font-medium text-amber-200 transition hover:bg-amber-400/30" @onclick="Save">
+                    Save
                 </button>
             </div>
         </div>
